@@ -418,13 +418,13 @@ export const pxToRpx = function (px) {
 
 目前Native实现的组件有
 
-- <cavnas/>
+- cavnas
 
-- <video/>
+- video
 
-- <map/>
+- map
 
-- <textarea/>
+- textarea
 
   ![Native Component](https://pic1.zhimg.com/80/v2-f0e838350357658699aeeed7dad74048_hd.jpg)
 
