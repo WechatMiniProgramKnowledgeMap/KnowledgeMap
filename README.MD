@@ -1,5 +1,6 @@
 - [开言](#开言)
 - [小程序架构](#小程序架构)
+- [小程序分包](#小程序如何分包)
 
 # 开言
 
@@ -409,3 +410,337 @@ export const pxToRpx = function (px) {
   ![Native Component](https://pic1.zhimg.com/80/v2-f0e838350357658699aeeed7dad74048_hd.jpg)
 
 Native组件层在WebView层之上。这目前带来了一些问题：
+
+
+## 小程序如何分包
+### 背景
+2017.01.09 小程序上线时，官方限制了代码包不能超过1MB大小，目的是出于对小程序启动速度的考虑，希望用户在使用任何一款小程序时，都能获得一种“秒开”体验。然而，1MB 的大小也限制了小程序功能的扩展，小程序业务的发展可能需要更大的体积。
+
+那么，能否有一种方案，在增加小程序包大小的同时，也能保持不错的启动速度呢？
+
+为了解决这个矛盾点，官方推出了「分包加载」这个技术方案。
+
+### 分包加载的介绍
+在构建小程序分包项目时，构建会输出一个或多个功能的分包，其中每个分包小程序必定含有一个主包，所谓的主包，即放置默认启动页面/TabBar 页面，以及一些所有分包都需用到公共资源/JS 脚本，而分包则是根据开发者的配置进行划分。
+
+在小程序启动时，默认会下载主包并启动主包内页面，如果用户需要打开分包内某个页面，客户端会把对应分包下载下来，下载完成后再进行展示。
+
+优点：
+
+* 对开发者而言，能使小程序有更大的代码体积，承载更多的功能与服务
+* 对用户而言，可以更快地打开小程序，同时在不影响启动速度前提下使用更多功能
+
+限制：
+
+* 整个小程序所有分包大小不超过 8M
+* 单个分包/主包大小不能超过 2M
+
+### 分包加载的配置
+假设支持分包的小程序目录结构如下：
+
+```
+├── app.js
+├── app.json
+├── app.wxss
+├── packageA
+│   └── pages
+│       ├── cat
+│       └── dog
+├── packageB
+│   └── pages
+│       ├── apple
+│       └── banana
+├── pages
+│   ├── index
+│   └── logs
+└── utils
+
+```
+开发者通过在 app.json subPackages 字段声明项目分包结构：
+
+```
+{
+  "pages":[
+    "pages/index",
+    "pages/logs"
+  ],
+  "subPackages": [
+    {
+      "root": "packageA",
+      "pages": [
+        "pages/cat",
+        "pages/dog"
+      ]
+    }, {
+      "root": "packageB",
+      "pages": [
+        "pages/apple",
+        "pages/banana"
+      ]
+    }
+  ]
+}
+
+```
+### 分包原则
+
+* 声明 subPackages 后，将按 subPackages 配置路径进行打包，subPackages 配置路径外的目录将被打包到 app（主包） 中
+* app（主包）也可以有自己的 pages（即最外层的 pages 字段
+* subPackage 的根目录不能是另外一个 subPackage 内的子目录
+* 首页的 TAB 页面必须在 app（主包）内
+
+### 引用原则
+
+* packageA 无法 require packageB JS 文件，但可以 require app、自己 package 内的 JS 文件
+* packageA 无法 import packageB 的 template，但可以 require app、自己 package 内的 template
+* packageA 无法使用 packageB 的资源，但可以使用 app、自己 package 内的资源
+
+## 使用mpvue如何分包？
+
+### package.json修改
+* 升级： "mpvue-loader": "^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "^0.1.1"
+* 新增： "relative": "^3.0.2"
+
+### 注意事项
+* 1.1.2-rc.5 修复 slot 文件路径生成错误的问题
+* 1.1.x 版本还不是很稳定，对稳定性要求较高的项目建议暂时使用 1.0.x 版本
+
+### src/main.js
+删除 config
+
+```
+-export default {
+--  // 这个字段走 app.json
+-  config: {
+-    // 页面前带有 ^ 符号的，会被编译成首页，其他页面可以选填，我们会自动把 webpack entry 里面的入口页面加进去
+-    pages: ['pages/logs/main', '^pages/index/main'],
+-    window: {
+-      backgroundTextStyle: 'light',
+-      navigationBarBackgroundColor: '#fff',
+-      navigationBarTitleText: 'WeChat',
+-      navigationBarTextStyle: 'black'
+-    }
+-  }
+-}
+
+```
+### src/main.json(新增文件与main.js同级)
+将原 js 中的 config 迁移到 main.json 文件中
+
+注意：分包应和主包在同一根目录下
+
+```
+main.json
+
++{
++ "pages": [
++   "pages/index/main",
++   "pages/logs/main"
++  ],
++  "subPackages": [
++    {
++      "root": "pages/packageA",
++     "pages": [
++       "counter/main"
++     ]
++   }
++ ],
++ "window": {
++ "backgroundTextStyle": "light",
++ "navigationBarBackgroundColor": "#fff",
++ "navigationBarTitleText": "WeChat",
++ "navigationBarTextStyle": "black"
++ }
+}
+
+```
+
+### webpack 配置配合升级指南
+
+* build/webpack.base.conf.js
+
+```
+// build/webpack.base.conf.js
+
++var CopyWebpackPlugin = require('copy-webpack-plugin')
++var relative = require('relative')
+
+ function resolve (dir) {
+   return path.join(__dirname, '..', dir)
+ }
+
+-function getEntry (rootSrc, pattern) {
+-  var files = glob.sync(path.resolve(rootSrc, pattern))
+-  return files.reduce((res, file) => {
+-    var info = path.parse(file)
+-    var key = info.dir.slice(rootSrc.length + 1) + '/' + info.name
+-    res[key] = path.resolve(file)
+-    return res
+-  }, {})
++function getEntry (rootSrc) {
++  var map = {};
++  glob.sync(rootSrc + '/pages/**/main.js')
++  .forEach(file => {
++    var key = relative(rootSrc, file).replace('.js', '');
++    map[key] = file;
++  })
++   return map;
+ }
+
+const appEntry = { app: resolve('./src/main.js') }
+ const pagesEntry = getEntry(resolve('./src'), 'pages/**/main.js')
+ const entry = Object.assign({}, appEntry, pagesEntry)
+
+@@ -108,6 +122,14 @@ module.exports = {
+     ]
+   },
+   plugins: [
+-    new MpvuePlugin()
++    new MpvuePlugin(),
++    new CopyWebpackPlugin([{
++      from: '**/*.json',
++      to: 'app.json'
++    }], {
++      context: 'src/'
++    }),
++    new CopyWebpackPlugin([ // 处理 main.json 里面引用的图片，不要放代码中引用的图片
++      {
++        from: path.resolve(__dirname, '../static'),
++        to: path.resolve(__dirname, '../dist/static'),
++        ignore: ['.*']
++      }
++    ])
+   ]
+ }
+```
+* build/webpack.dev.conf.js
+
+ 修改生成文件的路径，让生成的文件路径可以放在原来的 page 下面
+
+```
+module.exports = merge(baseWebpackConfig, {
+   devtool: '#source-map',
+   output: {
+     path: config.build.assetsRoot,
+-    filename: utils.assetsPath('js/[name].js'),
+-    chunkFilename: utils.assetsPath('js/[id].js')
++    filename: utils.assetsPath('[name].js'),
++    chunkFilename: utils.assetsPath('[id].js')
+   },
+   plugins: [
+     new webpack.DefinePlugin({
+@@ -42,8 +42,8 @@ module.exports = merge(baseWebpackConfig, {
+     // copy from ./webpack.prod.conf.js
+     // extract css into its own file
+     new ExtractTextPlugin({
+-      filename: utils.assetsPath('css/[name].wxss')
++      filename: utils.assetsPath('[name].wxss')
+     }),
+@@ -53,7 +53,7 @@ module.exports = merge(baseWebpackConfig, {
+       }
+     }),
+     new webpack.optimize.CommonsChunkPlugin({
+-      name: 'vendor',
++      name: 'common/vendor',
+       minChunks: function (module, count) {
+         // any required modules inside node_modules are extracted to vendor
+         return (
+@@ -64,17 +64,9 @@ module.exports = merge(baseWebpackConfig, {
+       }
+     }),
+     new webpack.optimize.CommonsChunkPlugin({
+-      name: 'manifest',
+-      chunks: ['vendor']
++      name: 'common/manifest',
++      chunks: ['common/vendor']
+     }),
+-    // copy custom static assets
+-    new CopyWebpackPlugin([
+-      {
+-        from: path.resolve(__dirname, '../static'),
+-        to: config.build.assetsSubDirectory,
+-        ignore: ['.*']
+-      }
+-    ]),
+
+```
+* build/webpack.prod.conf.js
+
+同 build/webpack.dev.conf.js 一样
+
+```
+@@ -24,10 +24,10 @@ var webpackConfig = merge(baseWebpackConfig, {
+   devtool: config.build.productionSourceMap ? '#source-map' : false,
+   output: {
+     path: config.build.assetsRoot,
+-    filename: utils.assetsPath('js/[name].js'),
+-    chunkFilename: utils.assetsPath('js/[id].js')
++    filename: utils.assetsPath('[name].js'),
++    chunkFilename: utils.assetsPath('[id].js')
+   },
+   plugins: [
+     // http://vuejs.github.io/vue-loader/en/workflow/production.html
+@@ -39,8 +39,8 @@ var webpackConfig = merge(baseWebpackConfig, {
+     }),
+     // extract css into its own file
+     new ExtractTextPlugin({
+-      // filename: utils.assetsPath('css/[name].[contenthash].css')
+-      filename: utils.assetsPath('css/[name].wxss')
++      // filename: utils.assetsPath('[name].[contenthash].css')
++      filename: utils.assetsPath('[name].wxss')
+     }),
+     // Compress extracted CSS. We are using this plugin so that possible
+     // duplicated CSS from different components can be deduped.
+@@ -72,7 +72,7 @@ var webpackConfig = merge(baseWebpackConfig, {
+     new webpack.HashedModuleIdsPlugin(),
+     // split vendor js into its own file
+     new webpack.optimize.CommonsChunkPlugin({
+-      name: 'vendor',
++      name: 'common/vendor',
+       minChunks: function (module, count) {
+         // any required modules inside node_modules are extracted to vendor
+         return (
+@@ -85,17 +85,9 @@ var webpackConfig = merge(baseWebpackConfig, {
+     // extract webpack runtime and module manifest to its own file in order to
+     // prevent vendor hash from being updated whenever app bundle is updated
+     new webpack.optimize.CommonsChunkPlugin({
+-      name: 'manifest',
+-      chunks: ['vendor']
+-    }),
++      name: 'common/manifest',
++      chunks: ['common/vendor']
++    })
+-    // copy custom static assets
+-    new CopyWebpackPlugin([
+-      {
+-        from: path.resolve(__dirname, '../static'),
+-        to: config.build.assetsSubDirectory,
+-        ignore: ['.*']
+-      }
+-    ])
+   ]
+ })
+```
+* config/index.js
+
+```
+module.exports = {
+     env: require('./prod.env'),
+     index: path.resolve(__dirname, '../dist/index.html'),
+     assetsRoot: path.resolve(__dirname, '../dist'),
+-    assetsSubDirectory: 'static', // 不将资源聚合放在 static 目录下
++    assetsSubDirectory: '',
+     assetsPublicPath: '/',
+     productionSourceMap: false,
+     // Gzip off by default as many popular static hosts such as
+@@ -26,7 +26,7 @@ module.exports = {
+     port: 8080,
+     // 在小程序开发者工具中不需要自动打开浏览器
+     autoOpenBrowser: false,
+-    assetsSubDirectory: 'static', // 不将资源聚合放在 static 目录下
++    assetsSubDirectory: '',
+     assetsPublicPath: '/',
+     proxyTable: {},
+     // CSS Sourcemaps off by default because relative paths are "buggy"
+
+```
