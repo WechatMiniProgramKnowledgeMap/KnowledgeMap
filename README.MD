@@ -334,3 +334,78 @@ wxss编译器：wcsc 把wxss文件转化为 js
 
 
 建议css3的特性都可以做一下尝试。
+
+
+
+## 尺寸单位rpx，可根据屏幕宽度自适应
+
+rpx（responsive pixel）: 可以根据屏幕宽度进行自适应。规定屏幕宽为750rpx。公式:
+
+```Js
+const dsWidth = 750
+
+export const screenHeightOfRpx = function () {
+  return 750 / env.screenWidth * env.screenHeight
+}
+
+export const rpxToPx = function (rpx) {
+  return env.screenWidth / 750 * rpx
+}
+
+export const pxToRpx = function (px) {
+  return 750 / env.screenWidth * px
+}
+
+```
+
+| 设备         | rpx换算px (屏幕宽度/750) | px换算rpx (750/屏幕宽度) |
+| ------------ | ------------------------ | ------------------------ |
+| iPhone5      | 1rpx = 0.42px            | 1px = 2.34rpx            |
+| iPhone6      | 1rpx = 0.5px             | 1px = 2rpx               |
+| iPhone6 Plus | 1rpx = 0.552px           | 1px = 1.81rpx            |
+
+## 样式导入
+
+使用`@import`语句可以导入外联样式表，`@import`后跟需要导入的外联样式表的相对路径，用`;`表示语句结束。
+
+
+
+## 内联样式
+
+静态的样式统一写到 class 中。style 接收动态的样式，在运行时会进行解析，**请尽量避免将静态的样式写进 style 中，以免影响渲染速度**。
+
+
+
+## 全局样式与局部样式
+
+定义在 app.wxss 中的样式为全局样式，作用于每一个页面。在 page 的 wxss 文件中定义的样式为局部样式，只作用在对应的页面，并会覆盖 app.wxss 中相同的选择器。
+
+
+
+# View - Component
+
+小程序提供了一系列组件用于开发业务功能，按照功能与HTML5的标签进行对比如下：
+
+![Component](https://pic3.zhimg.com/80/v2-480318a5bae828e51e8f05c1ea1921fa_hd.jpg)
+
+小程序的组件基于Web Component标准
+
+使用Polymer框架实现Web Component
+
+
+
+# View - Native Component
+
+目前Native实现的组件有
+
+- <cavnas/>
+
+- <video/>
+
+- <map/>
+
+- <textarea/>
+
+  ![Native Component](https://pic1.zhimg.com/80/v2-f0e838350357658699aeeed7dad74048_hd.jpg)
+
+Native组件层在WebView层之上。这目前带来了一些问题：
