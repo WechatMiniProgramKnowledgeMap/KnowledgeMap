@@ -1,6 +1,5 @@
 - [开言](#开言)
 - [小程序架构](#小程序架构)
-- [小程序分包](#小程序如何分包)
 
 # 开言
 
@@ -431,7 +430,7 @@ export const pxToRpx = function (px) {
 Native组件层在WebView层之上。这目前带来了一些问题：
 
 
-# 小程序如何分包
+# 小程序原生分包
 
 ## 分包加载的介绍
 在构建小程序分包项目时，构建会输出一个或多个功能的分包，其中每个分包小程序必定含有一个主包，所谓的主包，即放置默认启动页面/TabBar 页面，以及一些所有分包都需用到公共资源/JS 脚本，而分包则是根据开发者的配置进行划分。
@@ -509,18 +508,21 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 * packageA 无法使用 packageB 的资源，但可以使用 app、自己 package 内的资源
 
 
-## package.json修改
+# mpvue分包
+
+package.json修改
 * 升级： "mpvue-loader": "\^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "\^0.1.1"
 * 新增： "relative": "\^3.0.2"
 
-## 注意事项
+注意事项
 * 1.1.2-rc.5 修复 slot 文件路径生成错误的问题
 * 1.1.x 版本还不是很稳定，对稳定性要求较高的项目建议暂时使用 1.0.x 版本
 
-## src/main.js
+src/main.js
+
 删除 config
 
-```
+```js
 -export default {
 --  // 这个字段走 app.json
 -  config: {
@@ -541,7 +543,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 
 注意：分包应和主包在同一根目录下
 
-```
+```js
 main.json
 
 +{
@@ -569,10 +571,9 @@ main.json
 
 ## webpack 配置配合升级指南
 
-* build/webpack.base.conf.js
+ build/webpack.base.conf.js
 
-```
-// build/webpack.base.conf.js
+```js
 
 +var CopyWebpackPlugin = require('copy-webpack-plugin')
 +var relative = require('relative')
@@ -599,13 +600,6 @@ main.json
 +   return map;
  }
 
-const appEntry = { app: resolve('./src/main.js') }
- const pagesEntry = getEntry(resolve('./src'), 'pages/**/main.js')
- const entry = Object.assign({}, appEntry, pagesEntry)
-
-@@ -108,6 +122,14 @@ module.exports = {
-     ]
-   },
    plugins: [
 -    new MpvuePlugin()
 +    new MpvuePlugin(),
@@ -625,11 +619,9 @@ const appEntry = { app: resolve('./src/main.js') }
    ]
  }
 ```
-* build/webpack.dev.conf.js
+ build/webpack.dev.conf.js
 
- 修改生成文件的路径，让生成的文件路径可以放在原来的 page 下面
-
-```
+```js
 module.exports = merge(baseWebpackConfig, {
    devtool: '#source-map',
    output: {
@@ -641,14 +633,14 @@ module.exports = merge(baseWebpackConfig, {
    },
    plugins: [
      new webpack.DefinePlugin({
-@@ -42,8 +42,8 @@ module.exports = merge(baseWebpackConfig, {
+    module.exports = merge(baseWebpackConfig, {
      // copy from ./webpack.prod.conf.js
      // extract css into its own file
      new ExtractTextPlugin({
 -      filename: utils.assetsPath('css/[name].wxss')
 +      filename: utils.assetsPath('[name].wxss')
      }),
-@@ -53,7 +53,7 @@ module.exports = merge(baseWebpackConfig, {
+    module.exports = merge(baseWebpackConfig, {
        }
      }),
      new webpack.optimize.CommonsChunkPlugin({
@@ -657,7 +649,7 @@ module.exports = merge(baseWebpackConfig, {
        minChunks: function (module, count) {
          // any required modules inside node_modules are extracted to vendor
          return (
-@@ -64,17 +64,9 @@ module.exports = merge(baseWebpackConfig, {
+        module.exports = merge(baseWebpackConfig, {
        }
      }),
      new webpack.optimize.CommonsChunkPlugin({
@@ -676,12 +668,12 @@ module.exports = merge(baseWebpackConfig, {
 -    ]),
 
 ```
-* build/webpack.prod.conf.js
 
-同 build/webpack.dev.conf.js 一样
+ build/webpack.prod.conf.js
 
-```
-@@ -24,10 +24,10 @@ var webpackConfig = merge(baseWebpackConfig, {
+```js
+
+    var webpackConfig = merge(baseWebpackConfig, {
    devtool: config.build.productionSourceMap ? '#source-map' : false,
    output: {
      path: config.build.assetsRoot,
@@ -691,8 +683,7 @@ module.exports = merge(baseWebpackConfig, {
 +    chunkFilename: utils.assetsPath('[id].js')
    },
    plugins: [
-     // http://vuejs.github.io/vue-loader/en/workflow/production.html
-@@ -39,8 +39,8 @@ var webpackConfig = merge(baseWebpackConfig, {
+    var webpackConfig = merge(baseWebpackConfig, {
      }),
      // extract css into its own file
      new ExtractTextPlugin({
@@ -703,7 +694,7 @@ module.exports = merge(baseWebpackConfig, {
      }),
      // Compress extracted CSS. We are using this plugin so that possible
      // duplicated CSS from different components can be deduped.
-@@ -72,7 +72,7 @@ var webpackConfig = merge(baseWebpackConfig, {
+    var webpackConfig = merge(baseWebpackConfig, {
      new webpack.HashedModuleIdsPlugin(),
      // split vendor js into its own file
      new webpack.optimize.CommonsChunkPlugin({
@@ -712,7 +703,7 @@ module.exports = merge(baseWebpackConfig, {
        minChunks: function (module, count) {
          // any required modules inside node_modules are extracted to vendor
          return (
-@@ -85,17 +85,9 @@ var webpackConfig = merge(baseWebpackConfig, {
+     var webpackConfig = merge(baseWebpackConfig, {
      // extract webpack runtime and module manifest to its own file in order to
      // prevent vendor hash from being updated whenever app bundle is updated
      new webpack.optimize.CommonsChunkPlugin({
@@ -733,9 +724,11 @@ module.exports = merge(baseWebpackConfig, {
    ]
  })
 ```
-* config/index.js
 
-```
+ config/index.js
+
+```js
+
 module.exports = {
      env: require('./prod.env'),
      index: path.resolve(__dirname, '../dist/index.html'),
