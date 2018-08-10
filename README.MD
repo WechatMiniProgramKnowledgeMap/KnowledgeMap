@@ -499,7 +499,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 
 ### package.json修改
 * 升级： "mpvue-loader": "\^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "\^0.1.1"
-* 新增： "relative": "^3.0.2"
+* 新增： "relative": "\^3.0.2"
 
 ### 注意事项
 * 1.1.2-rc.5 修复 slot 文件路径生成错误的问题
