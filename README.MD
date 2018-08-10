@@ -826,3 +826,4 @@ module.exports = {
 
 - [微信小程序架构分析 (上)](https://zhuanlan.zhihu.com/p/22754296)
 - [ 微信小程序架构解析](https://zhuanlan.zhihu.com/p/25105936)
+- [2018微信公开课第七季上海站·小程序专场](http://daxue.qq.com/content/online/id/4107)
