@@ -347,6 +347,7 @@ wxss编译器：wcsc 把wxss文件转化为 js
 - 选择器，除了[官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxss.html)列出的，其实还支持
   - element>element
   - element+element
+- iconfont
 
 
 
@@ -820,3 +821,4 @@ module.exports = {
 - [微信小程序架构分析 (上)](https://zhuanlan.zhihu.com/p/22754296)
 - [ 微信小程序架构解析](https://zhuanlan.zhihu.com/p/25105936)
 - [2018微信公开课第七季上海站·小程序专场](http://daxue.qq.com/content/online/id/4107)
+- [小程序中使用iconfont](https://juejin.im/entry/5a54b73b6fb9a01ca7135335)
