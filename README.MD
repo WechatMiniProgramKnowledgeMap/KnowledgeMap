@@ -330,3 +330,7 @@ wxss编译器：wcsc 把wxss文件转化为 js
 - 选择器，除了[官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxss.html)列出的，其实还支持
   - element>element
   - element+element
+
+
+
+建议css3的特性都可以做一下尝试。
