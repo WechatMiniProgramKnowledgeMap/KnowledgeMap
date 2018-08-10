@@ -769,8 +769,6 @@ module.exports = {
 
 - 不能使用npm，但是可以自搭构建工具或者使用mp-vue。（未来官方有计划支持）
 
-- 可以使用ES6语法，但是例如Promise不能直接使用，需要自己加入ployfill。
-
 - 不能使用ES7，可以自己用babel+webpack自搭或者使用mp-vue。
 
 - 不支持使用自己的字体（未来官方计划支持）。
