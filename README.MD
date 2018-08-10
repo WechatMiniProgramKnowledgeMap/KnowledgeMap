@@ -22,7 +22,13 @@
 
 视图层和逻辑层通过系统层的JSBridage进行通信，逻辑层把数据变化通知到视图层，触发视图层页面更新，视图层把触发的事件通知到逻辑层进行业务处理。
 
-**视图层使用WebView渲染，逻辑层使用在iOS中使用自带的JSCore运行，在android中使用腾讯的x5内核运行。开发工具使用nw.js同时提供了视图层和逻辑层的运行环境。**
+**视图层使用WebView渲染，iOS中使用自带WKWebView，在android使用腾讯的x5内核(基于Blink)运行。**
+
+**逻辑层使用在iOS中使用自带的JSCore运行，在android中使用腾讯的x5内核(基于Blink)运行。**
+
+**开发工具使用nw.js同时提供了视图层和逻辑层的运行环境。**
+
+
 
 在mac下使用js-beautify对微信开发工具@v1.02.1808080代码批量格式化：
 
@@ -30,8 +36,6 @@
 cd /Applications/wechatwebdevtools.app/Contents/Resources/package.nw
 find . -type f -name '*.js' -not -path "./node_modules/*" -not -path -exec js-beautify -r -s 2 -p -f '{}' \;
 ```
-
-
 
 在js/extensions/appservice/index.js中找到：
 
@@ -235,7 +239,18 @@ function loadCode(filePath, sourceURL, content) {
 
 这样的结构也说明了小程序的动画和绘图 API 被设计成生成一个最终对象而不是一步一步执行的样子， 原因就是 json格式的数据传递和解析相比与原生 API 都是损耗不菲的，如果频繁调用很可能损耗过多性能，进而影响用户体验。
 
-**需要注意的是动画需要绑定在data上，而绘图却不用。你觉得是为什么呢？**
+
+
+## 下载小程序完整包
+
+![Download](https://pic4.zhimg.com/80/v2-d6deb274157ccffbc5cbc762503e9504_hd.jpg)
+
+## App Service - Life Cylce
+
+![Life Cylce](https://pic3.zhimg.com/80/v2-816d2cafb16283170adf83c2c20cf06f_hd.jpg)
+
+## 面试题
+**1.动画需要绑定在data上，而绘图却不用。你觉得是为什么呢？**
 
 ```js
 var context = wx.createCanvasContext('firstCanvas')
@@ -282,13 +297,13 @@ Page({
 })
 ```
 
+**2.小程序的http rquest请求是不是用的浏览器fetch API?**
 
+知识点考察
 
-# 下载小程序完整包
-
-![Download](https://pic4.zhimg.com/80/v2-d6deb274157ccffbc5cbc762503e9504_hd.jpg)
-
-
+- 知道request是由native实现的
+- jscore是不带http request、websocket、storage等功能的，那是webkit带的
+- 小程序的wx.request是不是遵循fetch API规范实现的呢？答案，显然不是。因为没有Promise。
 
 # View - WXML
 
@@ -304,6 +319,8 @@ WXML（WeiXin Markup Language）
 wxml编译器：wcc  把wxml文件 转为 js 
 
 执行方式：wcc index.wxml
+
+**使用Virtual DOM，进行局部更新**
 
 
 
@@ -365,6 +382,8 @@ export const pxToRpx = function (px) {
 | iPhone6      | 1rpx = 0.5px             | 1px = 2rpx               |
 | iPhone6 Plus | 1rpx = 0.552px           | 1px = 1.81rpx            |
 
+可以了解一下[pr2rpx-loader](https://github.com/mpvue/px2rpx-loader)这个库。
+
 ## 样式导入
 
 使用`@import`语句可以导入外联样式表，`@import`后跟需要导入的外联样式表的相对路径，用`;`表示语句结束。
@@ -412,15 +431,9 @@ export const pxToRpx = function (px) {
 Native组件层在WebView层之上。这目前带来了一些问题：
 
 
-## 小程序如何分包
-### 背景
-2017.01.09 小程序上线时，官方限制了代码包不能超过1MB大小，目的是出于对小程序启动速度的考虑，希望用户在使用任何一款小程序时，都能获得一种“秒开”体验。然而，1MB 的大小也限制了小程序功能的扩展，小程序业务的发展可能需要更大的体积。
+# 小程序如何分包
 
-那么，能否有一种方案，在增加小程序包大小的同时，也能保持不错的启动速度呢？
-
-为了解决这个矛盾点，官方推出了「分包加载」这个技术方案。
-
-### 分包加载的介绍
+## 分包加载的介绍
 在构建小程序分包项目时，构建会输出一个或多个功能的分包，其中每个分包小程序必定含有一个主包，所谓的主包，即放置默认启动页面/TabBar 页面，以及一些所有分包都需用到公共资源/JS 脚本，而分包则是根据开发者的配置进行划分。
 
 在小程序启动时，默认会下载主包并启动主包内页面，如果用户需要打开分包内某个页面，客户端会把对应分包下载下来，下载完成后再进行展示。
@@ -435,7 +448,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 * 整个小程序所有分包大小不超过 8M
 * 单个分包/主包大小不能超过 2M
 
-### 分包加载的配置
+## 分包加载的配置
 假设支持分包的小程序目录结构如下：
 
 ```
@@ -482,30 +495,29 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 }
 
 ```
-### 分包原则
+## 分包原则
 
 * 声明 subPackages 后，将按 subPackages 配置路径进行打包，subPackages 配置路径外的目录将被打包到 app（主包） 中
 * app（主包）也可以有自己的 pages（即最外层的 pages 字段
 * subPackage 的根目录不能是另外一个 subPackage 内的子目录
 * 首页的 TAB 页面必须在 app（主包）内
 
-### 引用原则
+## 引用原则
 
 * packageA 无法 require packageB JS 文件，但可以 require app、自己 package 内的 JS 文件
 * packageA 无法 import packageB 的 template，但可以 require app、自己 package 内的 template
 * packageA 无法使用 packageB 的资源，但可以使用 app、自己 package 内的资源
 
-## 使用mpvue如何分包？
 
-### package.json修改
+## package.json修改
 * 升级： "mpvue-loader": "\^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "\^0.1.1"
 * 新增： "relative": "\^3.0.2"
 
-### 注意事项
+## 注意事项
 * 1.1.2-rc.5 修复 slot 文件路径生成错误的问题
 * 1.1.x 版本还不是很稳定，对稳定性要求较高的项目建议暂时使用 1.0.x 版本
 
-### src/main.js
+## src/main.js
 删除 config
 
 ```
@@ -524,7 +536,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 -}
 
 ```
-### src/main.json(新增文件与main.js同级)
+## src/main.json(新增文件与main.js同级)
 将原 js 中的 config 迁移到 main.json 文件中
 
 注意：分包应和主包在同一根目录下
@@ -555,7 +567,7 @@ main.json
 
 ```
 
-### webpack 配置配合升级指南
+## webpack 配置配合升级指南
 
 * build/webpack.base.conf.js
 
@@ -744,3 +756,66 @@ module.exports = {
      // CSS Sourcemaps off by default because relative paths are "buggy"
 
 ```
+
+# 小程序的问题或限制（截止20180810）
+
+包含但不限于：
+
+- 小程序仍然使用WebView渲染，并非原生渲染。（部分原生）
+
+- 服务端接口返回的头无法执行，比如：Set-Cookie。
+
+- 依赖浏览器环境的js库不能使用。
+
+- 不能使用npm，但是可以自搭构建工具或者使用mp-vue。（未来官方有计划支持）
+
+- 可以使用ES6语法，但是例如Promise不能直接使用，需要自己加入ployfill。
+
+- 不能使用ES7，可以自己用babel+webpack自搭或者使用mp-vue。
+
+- 不支持使用自己的字体（未来官方计划支持）。
+
+- 可以用base64的方式来使用iconfont。
+
+- 小程序不能发朋友圈（可以通过保存图片到本地，发图片到朋友前。二维码可以使用[B接口](https://developers.weixin.qq.com/miniprogram/dev/api/qrcode.html)）。
+
+- 获取[二维码/小程序](https://developers.weixin.qq.com/miniprogram/dev/api/qrcode.html)接口的限制。
+
+  - B接口scene最大32个可见字符。
+  - AC接口总共生成的码数量限制为100,000，请谨慎调用。
+
+- 小程序推送只能使用“服务通知” 而且需要用户主动触发提交formId，formId只有7天有效期。（现在的做法是在每个页面都放入form并且隐藏以此获取更多的formId。后端使用原则为：优先使用有效期最短的）
+
+- 小程序大小限制2M，分包总计不超过8M
+
+- 转发（分享）小程序不能拿到成功结果，原来可以。[链接](https://mp.weixin.qq.com/s?__biz=MjM5NDAwMTA2MA==&mid=2695730124&idx=1&sn=666a448b047d657350de7684798f48d3&chksm=83d74a07b4a0c311569a748f4d11a5ebcce3ba8f6bd5a4b3183a4fea0b3442634a1c71d3cdd0&scene=21#wechat_redirect)（小游戏造的孽）
+
+- 拿到相同的unionId必须绑在同一个开放平台下。开放平台绑定限制：
+
+  - 50个移动应用
+  - 10个网站
+  - 50个同主体公众号
+  - 5个不同主体公众号
+  - 50个同主体小程序
+  - 5个不同主体小程序
+
+- 公众号关联小程序，[链接](https://developers.weixin.qq.com/miniprogram/introduction/#%E5%85%AC%E4%BC%97%E5%8F%B7%E5%85%B3%E8%81%94%E5%B0%8F%E7%A8%8B%E5%BA%8F)
+
+  - 所有公众号都可以关联小程序。
+  - 一个公众号可关联10个同主体的小程序，3个不同主体的小程序。
+  - 一个小程序可关联500个公众号。
+  - 公众号一个月可新增关联小程序13次，小程序一个月可新增关联500次。
+
+- 一个公众号关联的10个同主体小程序和3个非同主体小程序可以互相跳转
+
+- 品牌搜索不支持金融、医疗
+
+- 小程序授权需要用户主动点击
+
+- 小程序不提供测试**access_token**
+
+  
+
+# 性能优化
+
+我们知道view部分是运行在webview上的，所以前端领域的大多数优化方式都有用。
