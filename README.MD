@@ -23,6 +23,155 @@
 
 **视图层使用WebView渲染，逻辑层使用在iOS中使用自带的JSCore运行，在android中使用腾讯的x5内核运行。开发工具使用nw.js同时提供了视图层和逻辑层的运行环境。**
 
+在mac下使用js-beautify对微信开发工具@v1.02.1808080代码批量格式化：
+
+```Shell
+cd /Applications/wechatwebdevtools.app/Contents/Resources/package.nw
+find . -type f -name '*.js' -not -path "./node_modules/*" -not -path -exec js-beautify -r -s 2 -p -f '{}' \;
+```
+
+
+
+在js/extensions/appservice/index.js中找到：
+
+```js
+	267: function(a, b, c) {
+    const d = c(8),
+      e = c(227),
+      f = c(226),
+      g = c(228),
+      h = c(229),
+      i = c(230);
+    var j = window.__global.navigator.userAgent,
+      k = -1 !== j.indexOf('game');
+    k || i(), window.__global.getNewWeixinJSBridge = (a) => {
+      const {
+        invoke: b
+      } = f(a), {
+        publish: c
+      } = g(a), {
+        subscribe: d,
+        triggerSubscribeEvent: i
+      } = h(a), {
+        on: j,
+        triggerOnEvent: k
+      } = e(a);
+      return {
+        invoke: b,
+        publish: c,
+        subscribe: d,
+        on: j,
+        get __triggerOnEvent() {
+          return k
+        },
+        get __triggerSubscribeEvent() {
+          return i
+        }
+      }
+    }, window.WeixinJSBridge = window.__global.WeixinJSBridge = window.__global.getNewWeixinJSBridge('global'), window.__global.WeixinJSBridgeMap = {
+      __globalBridge: window.WeixinJSBridge
+    }, __devtoolsConfig.online && __devtoolsConfig.autoTest && setInterval(() => {
+      console.clear()
+    }, 1e4);
+    try {
+      var l = new window.__global.XMLHttpRequest;
+      l.responseType = 'text', l.open('GET', `http://${window.location.host}/calibration/${Date.now()}`, !0), l.send()
+    } catch (a) {}
+  }
+```
+
+在js/extensions/gamenaitveview/index.js中找到：
+
+```js
+  299: function(a, b, c) {
+    'use strict';
+    Object.defineProperty(b, '__esModule', {
+      value: !0
+    });
+    var d = c(242),
+      e = c(241),
+      f = c(243),
+      g = c(244);
+    window.WeixinJSBridge = {
+      on: d.a,
+      invoke: e.a,
+      publish: f.a,
+      subscribe: g.a
+    }
+  },
+```
+
+在js/extensions/pageframe/index.js中找到：
+
+```js
+317: function(a, b, c) {
+    'use strict';
+
+    function d() {
+      window.WeixinJSBridge = {
+        on: e.a,
+        invoke: f.a,
+        publish: g.a,
+        subscribe: h.a
+      }, k.a.init();
+      let a = document.createEvent('UIEvent');
+      a.initEvent('WeixinJSBridgeReady', !1, !1), document.dispatchEvent(a), i.a.init()
+    }
+    Object.defineProperty(b, '__esModule', {
+      value: !0
+    });
+    var e = c(254),
+      f = c(253),
+      g = c(255),
+      h = c(256),
+      i = c(86),
+      j = c(257),
+      k = c.n(j);
+    'complete' === document.readyState ? d() : window.addEventListener('load', function() {
+      d()
+    })
+  },
+```
+
+
+
+
+
+我们都看到了WeixinJSBridge的定义。分别都有`on`,`invoke`,`publish`,`subscribe`这个几个关键方法。
+
+拿`invoke`举例，在js/extensions/appservice/index.js中发现这段代码：
+
+```js
+f (!r) p[b] = s, f.send({
+    command: 'APPSERVICE_INVOKE',
+    data: {
+        api: c,
+        args: e,
+        callbackID: b
+    }
+});
+```
+
+在js/extensions/pageframe/index.js中发现这段代码：
+
+```js
+g[d] = c, e.a.send({
+    command: 'WEBVIEW_INVOKE',
+    data: {
+        api: a,
+        args: b,
+        callbackID: d
+    }
+})
+
+```
+
+简单的分析得知：字段command用来区分行为，invoke用来调用native的api。在不同的来源要使用不同的前缀。data里面包含api名，参数。另外callbackID指定接受回调的方法句柄。appservice和webview使用的通信协议是一致的。
+
+
+
+
+
 我们不能在代码里使用BOM和DOM是因为根本没有，另一方面也不希望JS代码直接操作视图。
 
 在开发工具中remote-helper.js中找到了这样的代码：
@@ -35,16 +184,7 @@ const vmGlobal = {
     eval: undefined,
     process: undefined,
     setTimeout(...args) {
-        const timer = global.setTimeout.call(global, ...args);
-        timers[++timerCount] = timer;
-        if (timerCount % 5 === 0) {
-            for (const key in timers) {
-                const item = timers[key];
-                if (item && !item._repeat && item._called && item._destroyed) {
-                    delete timers[key];
-                }
-            }
-        }
+        //...省略代码
         return timerCount;
     },
     clearTimeout(id) {
@@ -55,16 +195,7 @@ const vmGlobal = {
         }
     },
     setInterval(...args) {
-        const timer = global.setInterval.call(global, ...args);
-        timers[++timerCount] = timer;
-        if (timerCount % 5 === 0) {
-            for (const key in timers) {
-                const item = timers[key];
-                if (item && !item._repeat && item._called && item._destroyed) {
-                    delete timers[key];
-                }
-            }
-        }
+        //...省略代码
         return timerCount;
     },
     clearInterval(id) {
@@ -75,30 +206,7 @@ const vmGlobal = {
         }
     },
     console: (() => {
-        let consoleClone = Object.create(Object.getPrototypeOf(console));
-        const names = Object.getOwnPropertyNames(console);
-        for (const key of names) {
-            try {
-                const desc = Object.getOwnPropertyDescriptor(console, key);
-                if (desc) {
-                    const newDesc = {
-                        configurable: false,
-                    };
-                    if (desc.hasOwnProperty('writable')) {
-                        newDesc.writable = false;
-                    }
-                    Object.defineProperty(consoleClone, key, Object.assign({}, desc, newDesc));
-                }
-                else {
-                    consoleClone[key] = console[key];
-                }
-            }
-            catch (e) {
-                consoleClone = Object.assign(Object.create(Object.getPrototypeOf(console)), console);
-                Object.freeze(consoleClone);
-                break;
-            }
-        }
+        //...省略代码
         return consoleClone;
     })()
 };
@@ -175,3 +283,50 @@ Page({
 
 
 
+# 下载小程序完整包
+
+![Download](https://pic4.zhimg.com/80/v2-d6deb274157ccffbc5cbc762503e9504_hd.jpg)
+
+
+
+# View - WXML
+
+WXML（WeiXin Markup Language）
+
+- 支持数据绑定
+- 支持逻辑算术、运算
+- 支持模板、引用
+- 支持添加事件（bindtap）
+
+![WXML](https://pic3.zhimg.com/80/v2-e0a34d00890cab73c79d137edd1377a3_hd.jpg)
+
+wxml编译器：wcc  把wxml文件 转为 js 
+
+执行方式：wcc index.wxml
+
+
+
+# View - WXSS
+
+WXSS(WeiXin Style Sheets)
+
+![WXSS](https://pic2.zhimg.com/80/v2-3829f8c15260cd0cbcbadfab3446ad65_hd.jpg)
+
+wxss编译器：wcsc 把wxss文件转化为 js 
+
+执行方式： wcsc index.wxss
+
+
+
+## 支持大部分CSS特性
+
+亲测包含但不限于如下内容：
+
+- Transition
+- Animation
+  - Keyframes
+- border-radius
+- calc()
+- 选择器，除了[官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxss.html)列出的，其实还支持
+  - element>element
+  - element+element
