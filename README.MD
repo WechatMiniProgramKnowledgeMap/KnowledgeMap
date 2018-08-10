@@ -819,3 +819,10 @@ module.exports = {
 # 性能优化
 
 我们知道view部分是运行在webview上的，所以前端领域的大多数优化方式都有用。
+
+
+
+# 以上内容部分来自
+
+- [微信小程序架构分析 (上)](https://zhuanlan.zhihu.com/p/22754296)
+- [ 微信小程序架构解析](https://zhuanlan.zhihu.com/p/25105936)
