@@ -446,6 +446,9 @@ export const pxToRpx = function (px) {
   ![Native Component](https://pic1.zhimg.com/80/v2-f0e838350357658699aeeed7dad74048_hd.jpg)
 
 Native组件层在WebView层之上。这目前带来了一些问题：
+- 1.Native实现的组件会遮挡其他组件
+- 2.WebView渲染出来的视图在滚动时，Native实现的组件需要更新位置，这会带来性能问题，在安卓机器上比较明显
+- 3.小程序原生组件cover-view可以覆盖 cavnas video等，但是也有一下弊端，比如在cavnas上覆盖cover-view，就会发现坐标系不统一处理麻烦
 
 
 # 小程序原生分包
