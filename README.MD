@@ -21,6 +21,9 @@
 
 视图层和逻辑层通过系统层的JSBridage进行通信，逻辑层把数据变化通知到视图层，触发视图层页面更新，视图层把触发的事件通知到逻辑层进行业务处理。
 
+补充
+![one-context](https://user-images.githubusercontent.com/2350193/44186238-db146980-a14a-11e8-8096-bcb8fa6d28b2.png)
+
 **视图层使用WebView渲染，iOS中使用自带WKWebView，在android使用腾讯的x5内核(基于Blink)运行。**
 
 **逻辑层使用在iOS中使用自带的JSCore运行，在android中使用腾讯的x5内核(基于Blink)运行。**
@@ -525,7 +528,6 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 我们知道view部分是运行在webview上的，所以前端领域的大多数优化方式都有用。
 
 
-
 ## 加载优化
 
 ![preload](https://user-images.githubusercontent.com/2350193/44184904-d8624600-a143-11e8-8ab9-c932573bd243.png)
@@ -540,13 +542,21 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 
 **优化方式**
 
-- 代码压缩
-- 及时清理无用代码和资源文件
-- 减少代码包中的图片等资源文件的大小和数量
+- 代码压缩。
+- 及时清理无用代码和资源文件。
+- 减少代码包中的图片等资源文件的大小和数量。
+- 分包加载。
 
+**首屏加载的体验优化建议**
 
+- 提前请求: 异步数据请求不需要等待页面渲染完成。
+- 利用缓存: 利用storage API对异步请求数据进行缓存，二次启动时先利用缓存数据渲染页面，在进行后台更新。
+- 避免白屏：先展示页面骨架页和基础内容。
+- 及时反馈：即时地对需要用户等待的交互操作给出反馈，避免用户以为小程序无响应。
 
 ### 使用分包加载优化
+![sub-package](https://user-images.githubusercontent.com/2350193/44185607-2298f680-a147-11e8-8440-24ca42033623.png)
+
 在构建小程序分包项目时，构建会输出一个或多个功能的分包，其中每个分包小程序必定含有一个主包，所谓的主包，即放置默认启动页面/TabBar 页面，以及一些所有分包都需用到公共资源/JS 脚本，而分包则是根据开发者的配置进行划分。
 
 在小程序启动时，默认会下载主包并启动主包内页面，如果用户需要打开分包内某个页面，客户端会把对应分包下载下来，下载完成后再进行展示。
@@ -621,6 +631,12 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 * packageA 无法 import packageB 的 template，但可以 require app、自己 package 内的 template
 * packageA 无法使用 packageB 的资源，但可以使用 app、自己 package 内的资源
 
+#### 官方即将推出
+分包预加载
+![preload-sub-package](https://user-images.githubusercontent.com/2350193/44185655-63910b00-a147-11e8-9987-40f235ae08e9.png)
+
+独立分包
+![single-sub-package](https://user-images.githubusercontent.com/2350193/44185690-96d39a00-a147-11e8-9647-bd1cbc017f5a.png)
 
 ### mpvue分包加载优化
 
@@ -663,7 +679,7 @@ to
 
 **webpack 配置配合升级指南**
 
-找到build/webpack.base.conf.js
+build/webpack.base.conf.js
 
 ```js
 +var CopyWebpackPlugin = require('copy-webpack-plugin')
@@ -710,7 +726,7 @@ to
    ]
  }
 ```
-找到build/webpack.dev.conf.js
+build/webpack.dev.conf.js
 
 ```js
 module.exports = merge(baseWebpackConfig, {
@@ -760,7 +776,7 @@ module.exports = merge(baseWebpackConfig, {
 
 ```
 
- build/webpack.prod.conf.js
+build/webpack.prod.conf.js
 
 ```js
 
@@ -816,7 +832,7 @@ module.exports = merge(baseWebpackConfig, {
  })
 ```
 
- config/index.js
+config/index.js
 
 ```js
 
@@ -841,7 +857,19 @@ module.exports = {
 
 ```
 
+## 渲染性能优化
+![render](https://user-images.githubusercontent.com/2350193/44185879-af907f80-a148-11e8-8dcb-22aadd4e49a6.png)
+- 每次setData的调用都是一次进程间通信过程，通信开销与setData的数据量正相关。
+- setData会引发视图层页面内容的更新，这一耗时操作一定时间中会阻塞用户交互。
+- setData是小程序开发使用最频繁，也是最容易引发性能问题的。
 
+**避免不当使用setData**
+- 使用data在方法间共享数据，**可能增加setData传输的数据量。**。data应仅包括与页面渲染相关的数据。
+- 使用setData传输大量数据，**通讯耗时与数据正相关，页面更新延迟可能造成页面更新开销增加。**仅传输页面中发生变化的数据，使用setData的特殊key实现局部更新。
+- 短时间内频繁调用setData，**操作卡顿，交互延迟，阻塞通信，页面渲染延迟。**避免不必要的setData，对连续的setData调用进行合并。
+- 在后台页面进行setData，**抢占前台页面的渲染资源。**页面切入后台后的setData调用，延迟到页面重新展示时执行。
+
+![one-context](https://user-images.githubusercontent.com/2350193/44186238-db146980-a14a-11e8-8096-bcb8fa6d28b2.png)
 
 
 # 以上内容部分来自
