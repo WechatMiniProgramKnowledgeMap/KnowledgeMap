@@ -1,5 +1,31 @@
 - [开言](#开言)
 - [小程序架构](#小程序架构)
+  - [下载小程序完整包](#下载小程序完整包)
+  - [App Service - Life Cylce](#App Service - Life Cylce)
+  - [面试题](#面试题)
+- [View - WXML](#View - WXML)
+- [View - WXSS](#View - WXSS)
+  - [支持大部分CSS特性](#支持大部分CSS特性)
+  - [尺寸单位rpx](#尺寸单位rpx)
+  - [样式导入](#样式导入)
+  - [内联样式](#内联样式)
+  - [全局样式与局部样式](#全局样式与局部样式)
+  - [iconfont](#iconfont)
+- [View - Component](#View - Component)
+- [View - Native Component](#View - Native Component)
+- [目前小程序的问题或限制](#目前小程序的问题或限制)
+- [性能优化](#性能优化)
+  - [加载优化](#加载优化)
+    - [使用分包加载优化](#使用分包加载优化)
+    - [mpvue分包加载优化](#mpvue分包加载优化)
+  - [渲染性能优化](#渲染性能优化)
+- [官方小程序技术能力规划](#官方小程序技术能力规划)
+  - [自定义组件2.0](#自定义组件2.0)
+  - [npm支持](#npm支持)
+  - [官方自定义组件](#官方自定义组件)
+  - [添加体验评分](#添加体验评分)
+  - [原生组件同层渲染](#原生组件同层渲染)
+- [参考链接](#参考链接)
 
 # 开言
 
@@ -374,7 +400,7 @@ wxss编译器：wcsc 把wxss文件转化为 js
 
 
 
-## 尺寸单位rpx，可根据屏幕宽度自适应
+## 尺寸单位rpx
 
 rpx（responsive pixel）: 可以根据屏幕宽度进行自适应。规定屏幕宽为750rpx。公式:
 
@@ -419,7 +445,9 @@ export const pxToRpx = function (px) {
 
 定义在 app.wxss 中的样式为全局样式，作用于每一个页面。在 page 的 wxss 文件中定义的样式为局部样式，只作用在对应的页面，并会覆盖 app.wxss 中相同的选择器。
 
-## iconfont（截止20180810）
+## iconfont
+**截止20180810**
+
 小程序未来有计划支持字体。参考[微信公开课](http://daxue.qq.com/content/content/id/4113)。
 
 小程序开发与平时web开发类似，也可以使用字体图标，但是src:url()无论本地还是远程地址都不行，base64值则都是可以显示的。
@@ -464,7 +492,8 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 - 3.小程序原生组件cover-view可以覆盖 cavnas video等，但是也有一下弊端，比如在cavnas上覆盖cover-view，就会发现坐标系不统一处理麻烦
 
 
-# 目前小程序的问题或限制（截止20180810）
+# 目前小程序的问题或限制
+**截止20180810**
 
 包含但不限于：
 
@@ -577,7 +606,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 * 整个小程序所有分包大小不超过 8M
 * 单个分包/主包大小不能超过 2M
 
-#### 原生分包加载的配置
+**原生分包加载的配置**
 假设支持分包的小程序目录结构如下：
 
 ```
@@ -624,20 +653,20 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 }
 
 ```
-#### 分包原则
+**分包原则**
 
 * 声明 subPackages 后，将按 subPackages 配置路径进行打包，subPackages 配置路径外的目录将被打包到 app（主包） 中
 * app（主包）也可以有自己的 pages（即最外层的 pages 字段
 * subPackage 的根目录不能是另外一个 subPackage 内的子目录
 * 首页的 TAB 页面必须在 app（主包）内
 
-#### 引用原则
+**引用原则**
 
 * packageA 无法 require packageB JS 文件，但可以 require app、自己 package 内的 JS 文件
 * packageA 无法 import packageB 的 template，但可以 require app、自己 package 内的 template
 * packageA 无法使用 packageB 的资源，但可以使用 app、自己 package 内的资源
 
-#### 官方即将推出
+**官方即将推出**
 分包预加载
 ![preload-sub-package](https://user-images.githubusercontent.com/2350193/44185655-63910b00-a147-11e8-9987-40f235ae08e9.png)
 
@@ -941,8 +970,9 @@ module.exports = {
 
 
 
-# 以上内容部分来自
+# 参考链接
 
+以上内容部分来自：
 - [微信小程序架构分析 (上)](https://zhuanlan.zhihu.com/p/22754296)
 - [ 微信小程序架构解析](https://zhuanlan.zhihu.com/p/25105936)
 - [2018微信公开课第七季上海站·小程序专场](http://daxue.qq.com/content/online/id/4107)
