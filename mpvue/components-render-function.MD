@@ -1,33 +1,6 @@
-- 首先我们在pages/xxxPage/main.js中会调用``Vue.$mount``方法
-```
-import Vue from 'vue'
-import App from './index'
-
-const app = new Vue(App)
-app.$mount()
-```
-上面这个方法会走到``src/platforms/mp/runtime/index.js``中的``$mount``方法：
-```
-Vue.prototype.$mount = function (el, hydrating) {
-  // el = el && inBrowser ? query(el) : undefined
-  // return mountComponent(this, el, hydrating)
-
-  // 初始化小程序生命周期相关
-  const options = this.$options
-
-  if (options && (options.render || options.mpType)) {
-    const { mpType = 'page' } = options
-    return this._initMP(mpType, () => {
-      return mountComponent(this, undefined, undefined)
-    })
-  } else {
-    return mountComponent(this, undefined, undefined)
-  }
-}
-```
-# mpvue-loader/lib/loader.js
 - 1.将vue文件解析成模板对象
 ```
+// mpvue-loader/lib/loader.js
 var parts = parse(content, fileName, this.sourceMap)
 ```
 得到的结果大致如下：
@@ -64,7 +37,9 @@ var parts = parse(content, fileName, this.sourceMap)
 	"customBlocks": []
 }
 ```
-2.调用mpvue-loader/lib/template-compiler/index.js导出的接口并传入上面得到的html模板：
+
+- 2.调用mpvue-loader/lib/template-compiler/index.js导出的接口并传入上面得到的html模板：
+
 ```
 var templateCompilerPath = normalize.lib('template-compiler/index')
 ...
@@ -81,12 +56,15 @@ var defaultLoaders = {
 var loaders = Object.assign({}, defaultLoaders, options.loaders)
 ```
 
-# mpvue-loader/lib/template-compiler/index.js
-1. 调用mpvue/packages/mpvue-template-compiler/build.js的compile接口：
+- 3. 调用mpvue/packages/mpvue-template-compiler/build.js的compile接口：
+
 ```
+// mpvue-loader/lib/template-compiler/index.js
 var compiled = compile(html, compilerOptions)
 ```
+
 compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和staticRenderFns
+
 ```
 {
   ast: {
@@ -146,7 +124,9 @@ compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和sta
   tips: []
 }
 ```
+
 其中的render函数运行的结果是返回``VNode``对象，其实``render``函数应该长下面这样：
+
 ```
 (function() {
   with(this){
@@ -165,8 +145,10 @@ compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和sta
   }
 })
 ```
+
 其中的``_c``就是vue对象的``createElement``方法 (创建元素)，``_m``是``renderStatic``（渲染静态节点），``_v`` 是 
 ``createTextVNode``（创建文本dom），``_s`` 是 ``toString`` （转换为字符串）
+
 ```
 // src/core/instance/render.js
 export function initRender (vm: Component) {
@@ -190,9 +172,12 @@ Vue.prototype._m = renderStatic
 Vue.prototype._v = createTextVNode
 ...
 ```
-2. 调用compileWxml方法生产wxml模板，这个方法最终会调用 mpvue/packages/mpvue-template-compiler/build.js的compileToWxml方法将第一步compile出来的模板转成小程序的wxml模板
+
+- 4. 调用compileWxml方法生产wxml模板，这个方法最终会调用 mpvue/packages/mpvue-template-compiler/build.js的compileToWxml方法将第一步compile出来的模板转成小程序的wxml模板
+
 ```
 // mpvue-loader/lib/template-compiler/index.js
 compileWxml.call(this, compiled, html)
 ```
+
 总结可以得出mpvue-loader 和 mpvue/packages/mpvue-template-compiler，会在编译期，将html模板预编译成小程序的模板，而小程序本身不支持动态增删改查 wxml 节点信息，所以mpvue没有办法做到组件自定义 render函数。
