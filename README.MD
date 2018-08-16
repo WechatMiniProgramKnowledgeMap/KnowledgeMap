@@ -367,7 +367,6 @@ wxss编译器：wcsc 把wxss文件转化为 js
 - iconfont
 
 
-
 建议css3的特性都可以做一下尝试。
 
 
@@ -417,7 +416,18 @@ export const pxToRpx = function (px) {
 
 定义在 app.wxss 中的样式为全局样式，作用于每一个页面。在 page 的 wxss 文件中定义的样式为局部样式，只作用在对应的页面，并会覆盖 app.wxss 中相同的选择器。
 
+## iconfont（截止20180810）
+小程序未来有计划支持字体。参考[微信公开课](http://daxue.qq.com/content/content/id/4113)。
 
+小程序开发与平时web开发类似，也可以使用字体图标，但是src:url()无论本地还是远程地址都不行，base64值则都是可以显示的。
+
+将ttf文件转换成base64。打开这个平台transfonter.org/。点击Add fonts按钮，加载ttf格式的那个文件。将下边的base64 encode改为on。点击Convert按钮进行转换。转换后点击download下载。
+
+复制下载的压缩文件中的stylesheet.css的内容到font.wxss,并且将icomoon中的style.css除了@font-face所有的代码也复制到font.wxss并将i选择器换成.iconfont。最后：
+
+```html
+<text class="iconfont icon-home" style="font-size:50px;color:red"></text>
+```
 
 # View - Component
 
@@ -451,9 +461,92 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 - 3.小程序原生组件cover-view可以覆盖 cavnas video等，但是也有一下弊端，比如在cavnas上覆盖cover-view，就会发现坐标系不统一处理麻烦
 
 
-# 小程序原生分包
+# 小程序的问题或限制（截止20180810）
 
-## 分包加载的介绍
+包含但不限于：
+
+- 小程序仍然使用WebView渲染，并非原生渲染。（部分原生）
+
+- 服务端接口返回的头无法执行，比如：Set-Cookie。
+
+- 依赖浏览器环境的js库不能使用。
+
+- 不能使用npm，但是可以自搭构建工具或者使用mp-vue。（未来官方有计划支持）
+
+- 不能使用ES7，可以自己用babel+webpack自搭或者使用mp-vue。
+
+- 不支持使用自己的字体（未来官方计划支持）。
+
+- 可以用base64的方式来使用iconfont。
+
+- 小程序不能发朋友圈（可以通过保存图片到本地，发图片到朋友前。二维码可以使用[B接口](https://developers.weixin.qq.com/miniprogram/dev/api/qrcode.html)）。
+
+- 获取[二维码/小程序](https://developers.weixin.qq.com/miniprogram/dev/api/qrcode.html)接口的限制。
+
+  - B接口scene最大32个可见字符。
+  - AC接口总共生成的码数量限制为100,000，请谨慎调用。
+  - 真机扫描二维码只能跳转到线上版本，所以测试环境下只可通过开发者工具的‘通过二维码编译’进行调试。
+  - 没有发布到线上版本的小程序页面路径会导致生成二维码失败，需要先将添加了页面的小程序发布到线上版本。
+
+- 小程序推送只能使用“服务通知” 而且需要用户主动触发提交formId，formId只有7天有效期。（现在的做法是在每个页面都放入form并且隐藏以此获取更多的formId。后端使用原则为：优先使用有效期最短的）
+
+- 小程序大小限制2M，分包总计不超过8M
+
+- 转发（分享）小程序不能拿到成功结果，原来可以。[链接](https://mp.weixin.qq.com/s?__biz=MjM5NDAwMTA2MA==&mid=2695730124&idx=1&sn=666a448b047d657350de7684798f48d3&chksm=83d74a07b4a0c311569a748f4d11a5ebcce3ba8f6bd5a4b3183a4fea0b3442634a1c71d3cdd0&scene=21#wechat_redirect)（小游戏造的孽）
+
+- 拿到相同的unionId必须绑在同一个开放平台下。开放平台绑定限制：
+
+  - 50个移动应用
+  - 10个网站
+  - 50个同主体公众号
+  - 5个不同主体公众号
+  - 50个同主体小程序
+  - 5个不同主体小程序
+
+- 公众号关联小程序，[链接](https://developers.weixin.qq.com/miniprogram/introduction/#%E5%85%AC%E4%BC%97%E5%8F%B7%E5%85%B3%E8%81%94%E5%B0%8F%E7%A8%8B%E5%BA%8F)
+
+  - 所有公众号都可以关联小程序。
+  - 一个公众号可关联10个同主体的小程序，3个不同主体的小程序。
+  - 一个小程序可关联500个公众号。
+  - 公众号一个月可新增关联小程序13次，小程序一个月可新增关联500次。
+
+- 一个公众号关联的10个同主体小程序和3个非同主体小程序可以互相跳转
+
+- 品牌搜索不支持金融、医疗
+
+- 小程序授权需要用户主动点击
+
+- 小程序不提供测试**access_token**
+
+  
+
+# 性能优化
+
+我们知道view部分是运行在webview上的，所以前端领域的大多数优化方式都有用。
+
+
+
+## 加载优化
+
+![preload](https://user-images.githubusercontent.com/2350193/44184904-d8624600-a143-11e8-8ab9-c932573bd243.png)
+
+代码包的大小是最直接影响小程序加载启动速度的因素。代码包越大不仅下载速度时间长，业务代码注入时间也会变长。所以最好的优化方式就是减少代码包的大小。
+
+![load-time-series](https://user-images.githubusercontent.com/2350193/44184987-4c9ce980-a144-11e8-9f28-764209b37341.png)
+
+小程序加载的三个阶段的表示。
+
+
+
+**优化方式**
+
+- 代码压缩
+- 及时清理无用代码和资源文件
+- 减少代码包中的图片等资源文件的大小和数量
+
+
+
+### 使用分包加载优化
 在构建小程序分包项目时，构建会输出一个或多个功能的分包，其中每个分包小程序必定含有一个主包，所谓的主包，即放置默认启动页面/TabBar 页面，以及一些所有分包都需用到公共资源/JS 脚本，而分包则是根据开发者的配置进行划分。
 
 在小程序启动时，默认会下载主包并启动主包内页面，如果用户需要打开分包内某个页面，客户端会把对应分包下载下来，下载完成后再进行展示。
@@ -468,7 +561,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 * 整个小程序所有分包大小不超过 8M
 * 单个分包/主包大小不能超过 2M
 
-## 分包加载的配置
+#### 原生分包加载的配置
 假设支持分包的小程序目录结构如下：
 
 ```
@@ -515,21 +608,21 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 }
 
 ```
-## 分包原则
+#### 分包原则
 
 * 声明 subPackages 后，将按 subPackages 配置路径进行打包，subPackages 配置路径外的目录将被打包到 app（主包） 中
 * app（主包）也可以有自己的 pages（即最外层的 pages 字段
 * subPackage 的根目录不能是另外一个 subPackage 内的子目录
 * 首页的 TAB 页面必须在 app（主包）内
 
-## 引用原则
+#### 引用原则
 
 * packageA 无法 require packageB JS 文件，但可以 require app、自己 package 内的 JS 文件
 * packageA 无法 import packageB 的 template，但可以 require app、自己 package 内的 template
 * packageA 无法使用 packageB 的资源，但可以使用 app、自己 package 内的资源
 
 
-# mpvue分包
+### mpvue分包加载优化
 
 package.json修改
 * 升级： "mpvue-loader": "\^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "\^0.1.1"
@@ -539,63 +632,40 @@ package.json修改
 * 1.1.2-rc.5 修复 slot 文件路径生成错误的问题
 * 1.1.x 版本还不是很稳定，对稳定性要求较高的项目建议暂时使用 1.0.x 版本
 
-src/main.js
-
-删除 config
+移动src/main.js中config相关内容到同级目录下main.json(新建)中
 
 ```js
--export default {
---  // 这个字段走 app.json
--  config: {
--    // 页面前带有 ^ 符号的，会被编译成首页，其他页面可以选填，我们会自动把 webpack entry 里面的入口页面加进去
--    pages: ['pages/logs/main', '^pages/index/main'],
--    window: {
--      backgroundTextStyle: 'light',
--      navigationBarBackgroundColor: '#fff',
--      navigationBarTitleText: 'WeChat',
--      navigationBarTextStyle: 'black'
--    }
--  }
--}
-
-```
-## src/main.json(新增文件与main.js同级)
-将原 js 中的 config 迁移到 main.json 文件中
-
-注意：分包应和主包在同一根目录下
-
-```js
-main.json
-
-+{
-+ "pages": [
-+   "pages/index/main",
-+   "pages/logs/main"
-+  ],
-+  "subPackages": [
-+    {
-+      "root": "pages/packageA",
-+     "pages": [
-+       "counter/main"
-+     ]
-+   }
-+ ],
-+ "window": {
-+ "backgroundTextStyle": "light",
-+ "navigationBarBackgroundColor": "#fff",
-+ "navigationBarTitleText": "WeChat",
-+ "navigationBarTextStyle": "black"
-+ }
+export default {
+  // config: {...} 需要移动
 }
 
 ```
 
-## webpack 配置配合升级指南
-
- build/webpack.base.conf.js
+to
 
 ```js
+{
+ "pages": [
+   "pages/index/main",
+   "pages/logs/main"
+  ],
+  "subPackages": [
+    {
+      "root": "pages/packageA",
+     "pages": [
+       "counter/main"
+     ]
+   }
+ ],
+ "window": {...}
+}
+```
 
+**webpack 配置配合升级指南**
+
+找到build/webpack.base.conf.js
+
+```js
 +var CopyWebpackPlugin = require('copy-webpack-plugin')
 +var relative = require('relative')
 
@@ -640,7 +710,7 @@ main.json
    ]
  }
 ```
- build/webpack.dev.conf.js
+找到build/webpack.dev.conf.js
 
 ```js
 module.exports = merge(baseWebpackConfig, {
@@ -771,68 +841,6 @@ module.exports = {
 
 ```
 
-# 小程序的问题或限制（截止20180810）
-
-包含但不限于：
-
-- 小程序仍然使用WebView渲染，并非原生渲染。（部分原生）
-
-- 服务端接口返回的头无法执行，比如：Set-Cookie。
-
-- 依赖浏览器环境的js库不能使用。
-
-- 不能使用npm，但是可以自搭构建工具或者使用mp-vue。（未来官方有计划支持）
-
-- 不能使用ES7，可以自己用babel+webpack自搭或者使用mp-vue。
-
-- 不支持使用自己的字体（未来官方计划支持）。
-
-- 可以用base64的方式来使用iconfont。
-
-- 小程序不能发朋友圈（可以通过保存图片到本地，发图片到朋友前。二维码可以使用[B接口](https://developers.weixin.qq.com/miniprogram/dev/api/qrcode.html)）。
-
-- 获取[二维码/小程序](https://developers.weixin.qq.com/miniprogram/dev/api/qrcode.html)接口的限制。
-
-  - B接口scene最大32个可见字符。
-  - AC接口总共生成的码数量限制为100,000，请谨慎调用。
-  - 真机扫描二维码只能跳转到线上版本，所以测试环境下只可通过开发者工具的‘通过二维码编译’进行调试。
-  - 没有发布到线上版本的小程序页面路径会导致生成二维码失败，需要先将添加了页面的小程序发布到线上版本。
-
-- 小程序推送只能使用“服务通知” 而且需要用户主动触发提交formId，formId只有7天有效期。（现在的做法是在每个页面都放入form并且隐藏以此获取更多的formId。后端使用原则为：优先使用有效期最短的）
-
-- 小程序大小限制2M，分包总计不超过8M
-
-- 转发（分享）小程序不能拿到成功结果，原来可以。[链接](https://mp.weixin.qq.com/s?__biz=MjM5NDAwMTA2MA==&mid=2695730124&idx=1&sn=666a448b047d657350de7684798f48d3&chksm=83d74a07b4a0c311569a748f4d11a5ebcce3ba8f6bd5a4b3183a4fea0b3442634a1c71d3cdd0&scene=21#wechat_redirect)（小游戏造的孽）
-
-- 拿到相同的unionId必须绑在同一个开放平台下。开放平台绑定限制：
-
-  - 50个移动应用
-  - 10个网站
-  - 50个同主体公众号
-  - 5个不同主体公众号
-  - 50个同主体小程序
-  - 5个不同主体小程序
-
-- 公众号关联小程序，[链接](https://developers.weixin.qq.com/miniprogram/introduction/#%E5%85%AC%E4%BC%97%E5%8F%B7%E5%85%B3%E8%81%94%E5%B0%8F%E7%A8%8B%E5%BA%8F)
-
-  - 所有公众号都可以关联小程序。
-  - 一个公众号可关联10个同主体的小程序，3个不同主体的小程序。
-  - 一个小程序可关联500个公众号。
-  - 公众号一个月可新增关联小程序13次，小程序一个月可新增关联500次。
-
-- 一个公众号关联的10个同主体小程序和3个非同主体小程序可以互相跳转
-
-- 品牌搜索不支持金融、医疗
-
-- 小程序授权需要用户主动点击
-
-- 小程序不提供测试**access_token**
-
-  
-
-# 性能优化
-
-我们知道view部分是运行在webview上的，所以前端领域的大多数优化方式都有用。
 
 
 
