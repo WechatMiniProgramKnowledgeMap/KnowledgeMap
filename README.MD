@@ -860,8 +860,12 @@ module.exports = {
 ## 渲染性能优化
 ![render](https://user-images.githubusercontent.com/2350193/44185879-af907f80-a148-11e8-8dcb-22aadd4e49a6.png)
 - 每次setData的调用都是一次进程间通信过程，通信开销与setData的数据量正相关。
+
 - setData会引发视图层页面内容的更新，这一耗时操作一定时间中会阻塞用户交互。
-- setData是小程序开发使用最频繁，也是最容易引发性能问题的。
+
+- **setData是小程序开发使用最频繁，也是最容易引发性能问题的。**
+
+  
 
 **避免不当使用setData**
 - 使用data在方法间共享数据，**可能增加setData传输的数据量。**。data应仅包括与页面渲染相关的数据。
@@ -870,6 +874,20 @@ module.exports = {
 - 在后台页面进行setData，**抢占前台页面的渲染资源。**页面切入后台后的setData调用，延迟到页面重新展示时执行。
 
 ![one-context](https://user-images.githubusercontent.com/2350193/44186238-db146980-a14a-11e8-8096-bcb8fa6d28b2.png)
+
+
+
+**避免不当使用onPageScroll**
+
+- 只在有必要的时候监听pageScroll事件。不监听，则不会派发。
+- 避免在onPageScroll中执行复杂逻辑
+- 避免在onPageScroll中频繁调用setData
+- 避免滑动时频繁查询节点信息（SelectQuery）用以判断是否显示，部分场景建议使用节点布局橡胶状态监听（inersectionObserver）替代
+
+**使用自定义组件**
+
+在需要频繁更新的场景下，自定义组件的更新只在组件内部进行，不受页面其他部分内容复杂性影响。
+
 
 
 # 以上内容部分来自
