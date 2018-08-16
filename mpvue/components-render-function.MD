@@ -1,10 +1,12 @@
 - 1.将vue文件解析成模板对象
-```
+
+```js
 // mpvue-loader/lib/loader.js
 var parts = parse(content, fileName, this.sourceMap)
 ```
 得到的结果大致如下：
-```
+
+```js
 {
 	"template": {
 		"type": "template",
@@ -40,7 +42,7 @@ var parts = parse(content, fileName, this.sourceMap)
 
 - 2.调用mpvue-loader/lib/template-compiler/index.js导出的接口并传入上面得到的html模板：
 
-```
+```js
 var templateCompilerPath = normalize.lib('template-compiler/index')
 ...
 var defaultLoaders = {
@@ -58,14 +60,14 @@ var loaders = Object.assign({}, defaultLoaders, options.loaders)
 
 - 3. 调用mpvue/packages/mpvue-template-compiler/build.js的compile接口：
 
-```
+```js
 // mpvue-loader/lib/template-compiler/index.js
 var compiled = compile(html, compilerOptions)
 ```
 
 compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和staticRenderFns
 
-```
+```js
 {
   ast: {
     type: 1,
@@ -127,7 +129,7 @@ compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和sta
 
 其中的render函数运行的结果是返回``VNode``对象，其实``render``函数应该长下面这样：
 
-```
+```js
 (function() {
   with(this){
     return _c('div',{   //创建一个 div 元素
@@ -149,7 +151,7 @@ compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和sta
 其中的``_c``就是vue对象的``createElement``方法 (创建元素)，``_m``是``renderStatic``（渲染静态节点），``_v`` 是 
 ``createTextVNode``（创建文本dom），``_s`` 是 ``toString`` （转换为字符串）
 
-```
+```js
 // src/core/instance/render.js
 export function initRender (vm: Component) {
   ...
@@ -175,7 +177,7 @@ Vue.prototype._v = createTextVNode
 
 - 4. 调用compileWxml方法生产wxml模板，这个方法最终会调用 mpvue/packages/mpvue-template-compiler/build.js的compileToWxml方法将第一步compile出来的模板转成小程序的wxml模板
 
-```
+```js
 // mpvue-loader/lib/template-compiler/index.js
 compileWxml.call(this, compiled, html)
 ```
