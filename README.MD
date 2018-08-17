@@ -335,6 +335,19 @@ Page({
 - jscore是不带http request、websocket、storage等功能的，那是webkit带的
 - 小程序的wx.request是不是遵循fetch API规范实现的呢？答案，显然不是。因为没有Promise。
 
+**3.先授权获取用户信息再login会发生什么？**
+
+<img src="https://user-images.githubusercontent.com/35895755/44244965-268d4d00-a209-11e8-8ef4-b80cc7a78af7.png" width="60%" height="60%" />
+<img src="https://user-images.githubusercontent.com/35895755/44256575-2b1f2900-a23c-11e8-86ec-504151801ab5.png" width="40%" height="40%" />
+
+- 知道session_key有有效期，有效期并没有被告知开发者，只知道用户越频繁使用小程序，session_key有效期越长
+- 在调用wx.login时会直接更新session_key，导致旧session_key失效
+- 用户授权时，开放平台使用旧的session_key对用户信息进行加密。调用wx.login重新登录，会刷新session_key，这时后端服务从开放平台获取到新session_key，但是无法对老session_key加密过的数据解密，用户信息获取失败
+- 在用户信息授权之前先调用wx.checkSession呢？wx.checkSession检查登录态，并且保证wx.login不会刷新session_key，从而让后端服务正确解密数据。但是这里存在一个问题，如果小程序较长时间不用导致session_key过期，则wx.login必定会重新生成session_key，从而再一次导致用户信息解密失败。
+- 下图为一般情况下的授权流程，先调用wx.login，再请求获取授权信息。
+
+<img src="https://user-images.githubusercontent.com/35895755/44253171-3d479a00-a231-11e8-90ce-21352e76320e.png" width="60%" height="60%" />
+
 # View - WXML
 
 WXML（WeiXin Markup Language）
