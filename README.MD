@@ -28,6 +28,7 @@
 - [参考链接](#参考链接)
 - mpvue框架限制及源码分析
   - [不支持组件的render函数](./mpvue/components-render-function.MD)
+  - [不支持在组件上使用 Class 与 Style 绑定原因分析及解决方案](./mpvue/component-class-style.MD)
 
 # 开言
 
