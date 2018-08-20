@@ -4,6 +4,7 @@
 ## 解决方案：
 给自定义组件指定的标签直接挂载在子元素上就好了。
 - 在自定义组件上绑定class到一个props属性上
+
 ```js
  // 组件ComponentA.vue
  <template>
