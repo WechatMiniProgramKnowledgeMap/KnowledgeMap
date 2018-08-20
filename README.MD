@@ -734,6 +734,7 @@ to
 * 之前写在 main.js 中的 config 信息，需要在 main.js 同级目录下新建 main.json 文件，使用 webapck-copy-plugin copy 到 build 目录下
 * app.json 中引用的图片不会自动 copy 到 dist 目录下
 json 配置文件是由 webapck-copy-plugin copy 过去的，不会处理依赖，可以将图片放到根目录下 static 目录下，使用 webapck-copy-plugin copy 过去
+
 build/webpack.base.conf.js
 
 ```js
