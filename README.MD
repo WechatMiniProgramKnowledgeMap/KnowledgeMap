@@ -14,6 +14,7 @@
 - [View - Component](#view-component)
 - [View - Native Component](#view-native-component)
 - [目前小程序的问题或限制](#目前小程序的问题或限制)
+  - [小程序HTTP2支持情况](#小程序HTTP2支持情况)
 - [性能优化](#性能优化)
   - [加载优化](#加载优化)
     - [使用分包加载优化](#使用分包加载优化)
@@ -571,7 +572,45 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 
 - 开发者工具上，授权获取用户信息之后，如果清缓存选择全部清除，则即使使用了wx.checkSession，并且在session_key有效期内，授权获取用户信息也会得到新的session_key
   
+  
+  
+## 小程序HTTP2支持情况
+### HTTP2支持情况：模拟器与真机均不支持
+为了验证小程序对HTTP的支持适配情况，我找了两个服务器做测试，一个是网上搜索到支持HTTP2的服务器，一个是我本地起的一个HTTP2服务器。测试中所有请求方法均使用`wx.request`。
 
+1. 网上支持HTTP2的服务器：`HTTPs://www.snel.com:443`
+2. 在Chrome上查看该服务器为HTTP2
+
+    ![WechatIMG11](https://user-images.githubusercontent.com/17850400/44331323-d11c9e80-a49b-11e8-9a52-5be0e17a016b.jpeg)
+
+3. 在模拟器上请求该接口，`请求头`的HTTP版本为HTTP1.1，模拟器不支持HTTP2
+
+    ![WechatIMG12](https://user-images.githubusercontent.com/17850400/44331316-cfeb7180-a49b-11e8-83fb-f18ad4ff0bab.jpeg)
+
+
+4. 由于小程序线上环境需要在项目管理里配置请求域名，而这个域名不是我们需要的请求域名，没必要浪费一个域名位置，所以打开不验证域名，TSL等选项请求该接口，通过抓包工具表现与模拟器相同
+
+    ![WechatIMG14](https://user-images.githubusercontent.com/17850400/44331317-d0840800-a49b-11e8-854d-20c704b5da56.png)
+
+
+### HTTP2服务器需要对小程序做兼容性适配
+由上可以看出，在真机与模拟器都不支持HTTP2，但是都是成功请求的，并且`响应头`里的HTTP版本都变成了HTTP1.1版本，说明服务器对HTTP1.1做了兼容性适配。
+
+1. 本地新启一个node服务器，返回json为请求的HTTP版本
+
+    ![WechatIMG16](https://user-images.githubusercontent.com/17850400/44331322-d0840800-a49b-11e8-9f4b-85a31458d32d.jpeg)
+    
+
+2. 如果服务器只支持HTTP2，在模拟器请求时发生了一个`ALPN`协议的错误。并且提醒使用适配HTTP1。
+
+    ![WechatIMG8](https://user-images.githubusercontent.com/17850400/44331314-cfeb7180-a49b-11e8-98a7-2baff8de63b4.jpeg)
+
+3. 当把服务器的`allowHTTP1`,设置为`true`,并在请求时处理相关相关请求参数后，模拟器能正常访问接口，并打印出对应的HTTP请求版本
+
+    ![WechatIMG15](https://user-images.githubusercontent.com/17850400/44331318-d0840800-a49b-11e8-9931-a95c1fe2b0c4.jpeg)
+    
+    
+    
 # 性能优化
 
 **我们知道view部分是运行在webview上的，所以前端领域的大多数优化方式都有用。**
