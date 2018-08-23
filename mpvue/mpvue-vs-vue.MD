@@ -1,4 +1,4 @@
-## mpvue与vue
+# mpvue
 
 ```mpvue``` 是一个使用 ```Vue.js``` 开发小程序的前端框架。框架基于 ```Vue.js``` 核心，```mpvue``` 修改了 ```Vue.js``` 的 runtime 和 compiler 实现，使其可以运行在小程序环境中，从而为小程序开发引入了整套 ```Vue.js``` 开发体验。
 
@@ -200,3 +200,11 @@ style scoped
     }
 </style>
 ```
+
+## 面试题
+
+* MPVue开发的优势；
+* MPVue的生命周期和小程序的生命周期；
+* MPVue的数据流管理、vuex的使用场景；
+* MPVue与Vue有哪些不同之处；
+* MPVue开发中遇到过的坑；
