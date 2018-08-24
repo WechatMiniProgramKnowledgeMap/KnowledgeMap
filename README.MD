@@ -61,6 +61,7 @@
 视图层和逻辑层通过系统层的JSBridage进行通信，逻辑层把数据变化通知到视图层，触发视图层页面更新，视图层把触发的事件通知到逻辑层进行业务处理。
 
 补充
+
 ![one-context](https://user-images.githubusercontent.com/2350193/44186238-db146980-a14a-11e8-8096-bcb8fa6d28b2.png)
 
 **视图层使用WebView渲染，iOS中使用自带WKWebView，在android使用腾讯的x5内核(基于Blink)运行。**
@@ -734,9 +735,11 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 
 **官方即将推出**
 分包预加载
+
 ![preload-sub-package](https://user-images.githubusercontent.com/2350193/44185655-63910b00-a147-11e8-9987-40f235ae08e9.png)
 
 独立分包
+
 ![single-sub-package](https://user-images.githubusercontent.com/2350193/44185690-96d39a00-a147-11e8-9647-bd1cbc017f5a.png)
 
 ## 渲染性能优化
