@@ -17,7 +17,7 @@
   - [小程序HTTP2支持情况](#小程序HTTP2支持情况)
 - [性能优化](#性能优化)
   - [加载优化](#加载优化)
-    - [使用分包加载优化](#使用分包加载优化)
+     - [使用分包加载优化](#使用分包加载优化)
   - [渲染性能优化](#渲染性能优化)
 - [官方小程序技术能力规划](#官方小程序技术能力规划)
   - [自定义组件2.0](#自定义组件20)
@@ -34,10 +34,10 @@
   - [选型的个人看法](#选型的个人看法)
 - [mpvue](#mpvue)
   - [框架原理](#框架原理)
-    - [vue原理简单介绍](#vue原理简单介绍)
-    - [runtime](#runtime)
-    - [complier](#complier)
-    - [mpvue-loader](#mpvue-loader)
+     - [vue原理简单介绍](#vue原理简单介绍)
+     - [runtime](#runtime)
+     - [complier](#complier)
+     - [mpvue-loader](#mpvue-loader)
   - [mpvue分包加载优化](#mpvue分包加载优化)
 
 # 开言
@@ -851,7 +851,6 @@ export default class Index extends wepy.page {}
 - 但是配置方式还是类似，分环境配置文件，最终都会编译成小程序支持的目录结构和文件后缀。
 
 ## 综合比较
-<<<<<<< HEAD
 | 对比\框架 | 微信小程序 | mpvue | wepy |
 | ------ | ------ | ------ | ------ |
 | 语法规范 | 小程序开发规范 | vue.js | 类vue.js |
@@ -863,22 +862,7 @@ export default class Index extends wepy.page {}
 | 上手成本 | 全新学习 | vue 学习 | vue 和 wepy |
 | 数据管理 | 不支持 | vuex | redux |
 
-## 对于选型的一些个人看法
-=======
-
-| 对比\框架 | 微信小程序 | mpvue | wepy |
-| ------ | ------ | ------ | ------ |
-| 语法 | 小程序开发规范 | vue.js | 类vue.js |
-| 标签 | 小程序标签 | htm l + 小程序 | 小程序 |
-| 样式 | wxss | sass、less、postcss | sass、less、stylus |
-| 组件化 | 自定义组件规范 | vue规范 | 自定义组件规范 |
-| 复用 | 不可复用 | h5 | h5 |
-| 自动构建 | 无 | webpack | 框架内置 |
-| 成本 | 新 | vue 学习 | 似vue 和 wepy |
-| 状态管理 | 不支持 | vuex | redux |
-
 ## 选型的一些个人看法
->>>>>>> 修改目录结构
 先说结论：选择mpvue。
 
 wepy vs mpvue。
