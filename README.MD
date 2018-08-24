@@ -33,9 +33,7 @@
   - [选型的个人看法](#选型的个人看法)
 - [mpvue](#mpvue)
   - [框架原理](#框架原理)
-     - [vue原理简单介绍](#vue原理简单介绍)
-     - [runtime](#runtime)
-     - [complier](#complier)
+     - [runtime和complier](#runtime和complier)
      - [mpvue-loader](#mpvue-loader)
   - [分包加载](#分包加载)
 - [参考链接](#参考链接)
@@ -530,9 +528,9 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 
 - 依赖浏览器环境的js库不能使用。
 
-- 不能使用npm，但是可以自搭构建工具或者使用mp-vue。（未来官方有计划支持）
+- 不能使用npm，但是可以自搭构建工具或者使用mpvue。（未来官方有计划支持）
 
-- 不能使用ES7，可以自己用babel+webpack自搭或者使用mp-vue。
+- 不能使用ES7，可以自己用babel+webpack自搭或者使用mpvue。
 
 - 不支持使用自己的字体（未来官方计划支持）。
 
@@ -639,7 +637,6 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 ![load-time-series](https://user-images.githubusercontent.com/2350193/44184987-4c9ce980-a144-11e8-9f28-764209b37341.png)
 
 小程序加载的三个阶段的表示。
-
 
 
 **优化方式**
@@ -898,13 +895,40 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 
 
 ## 框架原理
-分为两部分，一个是通过`mpvue`提供mp的runtime，一个是通过`mpvue-loader`产出微信小程序所需要的文件结构和模块内容。
 
-### vue原理简单介绍
+**两个大方向**
 
-### runtime
+- 通过`mpvue`提供mp的runtime
+- 通过`mpvue-loader`产出微信小程序所需要的文件结构和模块内容。
 
-### complier
+**几个具体问题**
+
+要了解mpvue原理必然要了解vue原理，这是大前提。但是要讲清楚vue原理需要花费大量的篇幅，不如参考[learnVue](https://github.com/answershuto/learnVue)。
+
+现在假设您对vue原理有个大概的了解。
+
+由于Vue使用了Virtual DOM，所以虚拟Virtual DOM可以在任何支持JavaScript语言的平台上操作，譬如说目前Vue支持浏览器平台或weex。也可以是mp(小程序)，通过[mpvue](https://github.com/Meituan-Dianping/mpvue)。那么最后虚拟DOM如何映射到真实的DOM节点上呢？vue为平台做了一层适配层，浏览器平台见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/web/runtime/node-ops.js)以及weex平台见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/weex/runtime/node-ops.js)。不同平台之间通过适配层对外提供相同的接口，Virtual DOM进行操作Real DOM节点的时候，只需要调用这些适配层的接口即可，而内部实现则不需要关心，它会根据平台的改变而改变。
+
+所以思路肯定是往增加一个mp平台的runtime方向走。
+
+新Virtual DOM和旧Virtual DOM之间需要做一个patch，找出diff。patch完了之后的diff怎么更新视图，也就是如何给这些DOM加入attr、class、style等DOM属性呢？vue中有nextTick的概念用以更新视图，mpvue这块对于小程序的`setData`应该怎么处理呢？
+
+另外个问题在于小程序的Virtual DOM怎么生成？也就是怎么将template编译成`render function`。这当中还涉及到[运行时-编译器-vs-只包含运行时](https://cn.vuejs.org/v2/guide/installation.html#%E8%BF%90%E8%A1%8C%E6%97%B6-%E7%BC%96%E8%AF%91%E5%99%A8-vs-%E5%8F%AA%E5%8C%85%E5%90%AB%E8%BF%90%E8%A1%8C%E6%97%B6)，显然如果要提高性能、减少包大小、输出wxml、mpvue也要提供预编译的能力。因为要预输出wxml且没法动态改变DOM，所以动态组件，自定义 render，和<script type="text/x-template"> 字符串模版等都不支持([参考](http://mpvue.com/mpvue/#_15))。
+
+
+另外还有一些其他问题，最后总结一下
+
+- 如何预编译生成`render function`
+- 如何预编译生成wxml，wxss，wxs
+- 如何patch出diff
+- 如何更新视图
+- 如何建立vue实例与小程序 Page 实例关联
+- 如何建立小程序和vue生命周期映射关系，能在小程序生命周期中触发vue生命周期
+- 如何建立小程序事件代理机制，在事件代理函数中触发与之对应的vue组件事件响应
+
+**后面的内容逐步回答具体问题**
+
+### runtime和complier
 
 ### mpvue-loader
 `mpvue-loader` 是 `vue-loader` 的一个扩展延伸版，类似于超集的关系，除了 `vue-loader` 本身所具备的能力之外，它还会利用`mpvue-template-compiler`产出微信小程序所需要的文件结构和模块内容。
@@ -1330,3 +1354,4 @@ module.exports = {
 - [mpvue-docs](http://mpvue.com/build/mpvue-loader/)
 - [使用Mpvue开发微信小程序的最佳实践](https://juejin.im/post/5afd836251882567105ff8b4)
 - [用Vue.js开发微信小程序：开源框架mpvue解析](https://tech.meituan.com/mt_mpvue_development_framework.html)
+- [learnVue](https://github.com/answershuto/learnVue)
