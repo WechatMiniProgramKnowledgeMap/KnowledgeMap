@@ -1070,16 +1070,16 @@ export default class Index extends wepy.page {}
 - 但是配置方式还是类似，分环境配置文件，最终都会编译成小程序支持的目录结构和文件后缀。
 
 ## 综合比较
-| 对比\框架 | mpvue | wepy |
-| ------ | ------ | ------ |
-| 语法 | vue.js | 类vue.js |
-| 标签 | htm l + 小程序 | 小程序 |
-| 样式 | ---- | - |
-| 组件化 | vue规范 | 自定义组件规范 |
-| 复用 | h5 | h5 |
-| 自动构建 | webpack | 框架内置 |
-| 成本 | vue 学习 | 似vue 和 wepy |
-| 数据管理 | vuex | redux |
+| 对比\框架 | 微信小程序 | mpvue | wepy |
+| ------ | ------ | ------ | ------ |
+| 语法规范 | 小程序开发规范 | vue.js | 类vue.js |
+| 标签集合 | 小程序 | htm l + 小程序 | 小程序 |
+| 样式规范 | wxss | sass,less,postcss | sass,less,styus |
+| 组件化 | 无组件化机制 | vue规范 | 自定义组件规范 |
+| 多段复用 | 不可复用 | 支持h5 | 支持h5 |
+| 自动构建 | 无自动构建 | webpack | 框架内置 |
+| 上手成本 | 全新学习 | vue 学习 | vue 和 wepy |
+| 数据管理 | 不支持 | vuex | redux |
 
 ## 对于选型的一些个人看法
 先说结论：选择mpvue。
