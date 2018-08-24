@@ -48,7 +48,7 @@
 
 # 小程序架构
 
-![架构图](https://pic4.zhimg.com/80/v2-2b982ccd90101fab6b6c5994abfc66b1_hd.jpg)
+![architecture](https://user-images.githubusercontent.com/2350193/44563914-ff97c380-a792-11e8-8e77-6d0970891e24.png)
 
 微信小程序的框架包含两部分View视图层、App Service逻辑层。View层用来渲染页面结构，AppService层用来逻辑处理、数据请求、接口调用。
 
@@ -285,11 +285,11 @@ function loadCode(filePath, sourceURL, content) {
 
 ## 下载小程序完整包
 
-![Download](https://pic4.zhimg.com/80/v2-d6deb274157ccffbc5cbc762503e9504_hd.jpg)
+![download](https://user-images.githubusercontent.com/2350193/44563929-13432a00-a793-11e8-976e-e3040deded70.png)
 
 ## App Service - Life Cylce
 
-![Life Cylce](https://pic3.zhimg.com/80/v2-816d2cafb16283170adf83c2c20cf06f_hd.jpg)
+![lifecycle](https://user-images.githubusercontent.com/2350193/44563935-1b02ce80-a793-11e8-88d1-a89b7c93d4da.png)
 
 ## 面试题
 **1.动画需要绑定在data上，而绘图却不用。你觉得是为什么呢？**
