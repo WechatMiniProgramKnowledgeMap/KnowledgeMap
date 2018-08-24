@@ -18,7 +18,6 @@
 - [性能优化](#性能优化)
   - [加载优化](#加载优化)
     - [使用分包加载优化](#使用分包加载优化)
-    - [mpvue分包加载优化](#mpvue分包加载优化)
   - [渲染性能优化](#渲染性能优化)
 - [官方小程序技术能力规划](#官方小程序技术能力规划)
   - [自定义组件2.0](#自定义组件20)
@@ -28,9 +27,18 @@
   - [原生组件同层渲染](#原生组件同层渲染)
 - [参考链接](#参考链接)
 - [wepy vs mpvue](#wepy-vs-mpvue)
-- [wepy与mpvue](#wepy与mpvue)
-- [不支持组件的render函数](./mpvue/components-render-function.MD)
-- [不支持在组件上使用 Class 与 Style 绑定原因分析及解决方案](./mpvue/component-class-style.MD)
+  - [数据流管理](#数据流管理)
+  - [组件化](#组件化)
+  - [工程化](#工程化)
+  - [综合比较](#综合比较)
+  - [选型的个人看法](#选型的个人看法)
+- [mpvue](#mpvue)
+  - [框架原理](#框架原理)
+    - [vue原理简单介绍](#vue原理简单介绍)
+    - [runtime](#runtime)
+    - [complier](#complier)
+    - [mpvue-loader](#mpvue-loader)
+  - [mpvue分包加载优化](#mpvue分包加载优化)
 
 # 开言
 
@@ -599,7 +607,6 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 1. 本地新启一个node服务器，返回json为请求的HTTP版本
 
     ![WechatIMG16](https://user-images.githubusercontent.com/17850400/44331322-d0840800-a49b-11e8-9f4b-85a31458d32d.jpeg)
-    
 
 2. 如果服务器只支持HTTP2，在模拟器请求时发生了一个`ALPN`协议的错误。并且提醒使用适配HTTP1。
 
@@ -732,7 +739,375 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 独立分包
 ![single-sub-package](https://user-images.githubusercontent.com/2350193/44185690-96d39a00-a147-11e8-9647-bd1cbc017f5a.png)
 
-### mpvue分包加载优化
+## 渲染性能优化
+![render](https://user-images.githubusercontent.com/2350193/44185879-af907f80-a148-11e8-8dcb-22aadd4e49a6.png)
+- 每次setData的调用都是一次进程间通信过程，通信开销与setData的数据量正相关。
+
+- setData会引发视图层页面内容的更新，这一耗时操作一定时间中会阻塞用户交互。
+
+- **setData是小程序开发使用最频繁，也是最容易引发性能问题的。**
+  
+
+**避免不当使用setData**
+- 使用data在方法间共享数据，**可能增加setData传输的数据量。**。data应仅包括与页面渲染相关的数据。
+- 使用setData传输大量数据，**通讯耗时与数据正相关，页面更新延迟可能造成页面更新开销增加。**仅传输页面中发生变化的数据，使用setData的特殊key实现局部更新。
+- 短时间内频繁调用setData，**操作卡顿，交互延迟，阻塞通信，页面渲染延迟。**避免不必要的setData，对连续的setData调用进行合并。
+- 在后台页面进行setData，**抢占前台页面的渲染资源。**页面切入后台后的setData调用，延迟到页面重新展示时执行。
+
+![one-context](https://user-images.githubusercontent.com/2350193/44186238-db146980-a14a-11e8-8096-bcb8fa6d28b2.png)
+
+
+
+**避免不当使用onPageScroll**
+
+- 只在有必要的时候监听pageScroll事件。不监听，则不会派发。
+- 避免在onPageScroll中执行复杂逻辑
+- 避免在onPageScroll中频繁调用setData
+- 避免滑动时频繁查询节点信息（SelectQuery）用以判断是否显示，部分场景建议使用节点布局橡胶状态监听（inersectionObserver）替代
+
+**使用自定义组件**
+
+在需要频繁更新的场景下，自定义组件的更新只在组件内部进行，不受页面其他部分内容复杂性影响。
+
+
+
+# 官方小程序技术能力规划
+
+## 自定义组件2.0
+
+小程序的几个页面间，存在一些相同或是类似的区域，这时候可以把这些区域逻辑封装成一个自定义组件，代码就可以重用，或者对于比较独立逻辑，也可以把它封装成一个自定义组件，也就是微信去年发布的自定义组件，它让代码得到复用、减少代码量，更方便模块化，优化代码架构组织，也使得模块清晰，后期更好地维护，从而保证更好的性能。
+
+但微信打算在原来的基础上推出的自定义组件2.0，它将拥有更高级的性能：
+
+- usingComponents计划支持全局定义和通配符定义：这意味着不用在每个页面反复定义，可以批量导入目录下的所有自定义组件
+- 计划支持类似Computed和watch的功能，它能使代码逻辑更清晰
+- 计划支持Component构造器插件，在实例化一个自定义组件的时候，允许你在构造器的这个阶段，加入一些逻辑，方便进行一些扩展，甚至是可以扩展成VUE的语法
+
+## npm支持
+
+目前小程序开发的痛点是：开源组件要手动复制到项目，后续更新组件也需要手动操作。不久的将来，小程序将支持npm包管理，有了这个之后，想要引入一些开源的项目就变得很简单了，只要在项目里面声明，然后用简单的命令安装，就可以使用了。
+
+## 官方自定义组件
+
+微信小程序团队表示，他们在考虑推出一些官方自定义组件，为什么不内置到基础库里呢？因为内置组件要提供给开发者，这个组件一定是开发者很难实现或者是无法实现的一个能力。所以他们更倾向于封装成自定义组件，想基于这些内置组件里，封装一些比较常见的、交互逻辑比较复杂的组件给大家使用，让大家更容易开发。类似弹幕组件，开发者就不用关注弹幕怎么飘，可以节省开发者的开发成本。
+
+同时，他们也想给开发者提供一些规范和一些模板，让开发者设计出好用的自定义组件，更好地被大家去使用。
+
+ ## 添加体验评分
+
+当小程序加载太慢时，可能会导致用户的流失，而小程序的开发者可能会面临着不知道如何定位问题或不知如何解决问题的困境。
+
+为此，小程序即将推出一个体验评分的功能，这是为了帮助开发者可以检查出小程序有一些什么体验不好的地方，也会同时给出一份优化的指引建议。
+
+## 原生组件同层渲染
+
+小程序在最初的技术选型时，引入了原生组件的概念，因为原生组件可以使小程序的能力更加丰富，比如地图、音视频的能力，但是原生组件是由客户端原生渲染的，导致了原生组件的层级是最高的，开发者很容易遇到打开调试的问题，发现视频组件挡在了vConsole上。
+
+为了解决这个问题，当时微信做了一个过渡的方案：cover-view。cover-view可以覆盖在原生组件之上，这一套方案解决了大部分的需求场景。比如说视频组件上很多的按钮、标题甚至还有动画的弹幕，这些都是用cover-view去实现的，但它还是没有完全解决原生组件的开发体验问题，因为cover-view有一些限制：
+
+- 无法与其他组件混在一起渲染
+- 没有完整的触摸事件
+- cover-view对样式的表现有差异
+- cover-view对样式的支持度不够高
+
+因此微信决定将用同层渲染取代cover-view，它能像普通组件一样使用，原生组件的层级不再是最高，而是和其他的非原生组件在同一层级渲染，可完全由z-index控制，可完全支持触摸事件。
+
+微信表示，同层渲染在iOS平台小程序上已经开始内测，会很快开放给开发者，Android平台已经取得突破性进展，目前正在做一轮封装的工作，开放指日可待。
+
+# wepy vs mpvue
+
+## 数据流管理
+相比传统的小程序框架，这个一直是我们作为资深开发者比较期望去解决的，在web开发中，随着 flux、redux、vuex 等多个数据流工具出现，我们也期望在业务复杂的小程序中使用。
+
+* WePY 默认支持 Redux，在脚手架生成项目的时候可以内置
+
+* mpvue 作为 vue 的移植版本，当然支持 vuex，同样在脚手架生成项目的时候可以内置
+
+## 组件化
+如果你和我们一样，经历了从无到有的小程序业务开发，建议阅读【小程序的组件化开发】章节，进行官方语法的组件库开发（从基础库 1.6.3 开始，官方提供了组件化解决方案）。
+
+* WePY 类似 vue 实现了单文件组件，最大的差别是文件后缀 .wpy，只是写法上会有差异，具体可以查看【主流框架使用案例 1：WePY】章节，学习起来有一定成本，不过也会很快适应：
+
+```
+export default class Index extends wepy.page {}
+```
+
+* mpvue 作为 vue 的移植版本，支持单文件组件，template、script 和 style 都在一个 .vue 文件中，和 vue 的写法类似，所以对 vue 开发熟悉的同学会比较适应。
+
+## 工程化
+我们在第一节中提到过：所有的小程序开发依赖官方提供的开发者工具。开发者工具简单直观，对调试小程序很有帮助，现在也支持腾讯云（目前我们还没有使用，但是对新的一些开发者还是有帮助的），可以申请测试报告查看小程序在真实的移动设备上运行性能和运行效果，但是它本身没有类似前端工程化中的概念和工具。
+
+* wepy 内置了构建，通过 wepy init 命令初始化项目，大致流程如下：
+
+- wepy-cli 会判断模版是在远程仓库还是在本地，如果在本地则会立即跳到第 3 步，反之继续进行。
+- 会从远程仓库下载模版，并保存到本地。
+- 询问开发者 Project name 等问题，依据开发者的回答，创建项目。
+
+* mpvue 沿用了 vue 中推崇的 webpack 作为构建工具，但同时提供了一些自己的插件以及配置文件的一些修改，比如：
+
+- 不再需要 html-webpack-plugin
+- 基于 webpack-dev-middleware 修改成 webpack-dev-middleware-hard-disk
+- 最大的变化是基于 webpack-loader 修改成 mpvue-loader
+- 但是配置方式还是类似，分环境配置文件，最终都会编译成小程序支持的目录结构和文件后缀。
+
+## 综合比较
+<<<<<<< HEAD
+| 对比\框架 | 微信小程序 | mpvue | wepy |
+| ------ | ------ | ------ | ------ |
+| 语法规范 | 小程序开发规范 | vue.js | 类vue.js |
+| 标签集合 | 小程序 | htm l + 小程序 | 小程序 |
+| 样式规范 | wxss | sass,less,postcss | sass,less,styus |
+| 组件化 | 无组件化机制 | vue规范 | 自定义组件规范 |
+| 多段复用 | 不可复用 | 支持h5 | 支持h5 |
+| 自动构建 | 无自动构建 | webpack | 框架内置 |
+| 上手成本 | 全新学习 | vue 学习 | vue 和 wepy |
+| 数据管理 | 不支持 | vuex | redux |
+
+## 对于选型的一些个人看法
+=======
+
+| 对比\框架 | 微信小程序 | mpvue | wepy |
+| ------ | ------ | ------ | ------ |
+| 语法 | 小程序开发规范 | vue.js | 类vue.js |
+| 标签 | 小程序标签 | htm l + 小程序 | 小程序 |
+| 样式 | wxss | sass、less、postcss | sass、less、stylus |
+| 组件化 | 自定义组件规范 | vue规范 | 自定义组件规范 |
+| 复用 | 不可复用 | h5 | h5 |
+| 自动构建 | 无 | webpack | 框架内置 |
+| 成本 | 新 | vue 学习 | 似vue 和 wepy |
+| 状态管理 | 不支持 | vuex | redux |
+
+## 选型的一些个人看法
+>>>>>>> 修改目录结构
+先说结论：选择mpvue。
+
+wepy vs mpvue。
+
+理由：
+
+**工程化**
+原生开发因为不带工程化，诸如NPM包（未来会引入）、ES7、图片压缩、PostCss、pug、ESLint等等不能用。如果自己要搭工程化，不如直接使用wepy或mpvue。mpvue和wepy都可以和小程序原生开发混写。[参考mpvue-echart](#https://github.com/mpvue/examples/tree/master/echarts)，[参考wepy](https://github.com/Tencent/wepy/issues/1560)。
+而问题在于wepy没有引入webpack(wepy@2.0.x依然没有引入)，以上说的这些东西都要造轮子（作者造或自己造）。没有引入webpack是一个重大的硬伤。社区维护的成熟webpack显然更稳定，轮子更多。
+
+**维护**
+wepy也是社区维护的，是官方的？其实wepy的主要开发者只有作者一人，附上一个[contrubutors](https://github.com/Tencent/wepy/graphs/contributors)链接。另外被官方招安了也是后来的事，再说腾讯要有精力帮着一起维护好wepy，为什么不花精力在小程序原生开发上呢？再来看看mpvue，是美团一个前端小组维护的。
+
+**学习成本**
+vue的学习曲线比较平缓。mpvue是vue的子集。所以mpvue的学习成本会低于wepy。尤其是之前技术栈有学过用过vue的。
+
+**未来规划**
+mpvue已经支持web和小程序。因为mpvue基于AST，所以未来可以支持支付宝小程序和快应用。他们也是有这样的规划。
+
+请在需求池下面自己找
+![mpvue-feature](https://user-images.githubusercontent.com/2350193/44379522-f9a6a600-a538-11e8-8939-273ace7871ae.jpg)
+
+**坑**
+两者都有各自的坑。但是我觉得有一些wepy的坑是没法容忍的。比如[repeat组建里面用computed得到的列表全是同一套数据](https://github.com/Tencent/wepy/issues/1231)而且1.x是没法解决的。
+wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更多，而且wepy有些坑有些碍于架构设计没办法解决。
+
+# mpvue
+> Vue.js 小程序版, fork 自 vuejs/vue@2.4.1，保留了 vue runtime 能力，添加了小程序平台的支持。
+`mpvue` 是一个使用 `Vue.js` 开发小程序的前端框架。框架基于 `Vue.js` 核心，`mpvue` 修改了 `Vue.js` 的 runtime 和 compiler 实现，使其可以运行在小程序环境中，从而为小程序开发引入了整套 `Vue.js` 开发体验。
+
+
+## 框架原理
+分为两部分，一个是通过`mpvue`提供mp的runtime，一个是通过`mpvue-loader`产出微信小程序所需要的文件结构和模块内容。
+
+### vue原理简单介绍
+
+### runtime
+
+### complier
+
+### mpvue-loader
+`mpvue-loader` 是 `vue-loader` 的一个扩展延伸版，类似于超集的关系，除了 `vue-loader` 本身所具备的能力之外，它还会利用`mpvue-template-compiler`产出微信小程序所需要的文件结构和模块内容。
+
+* entry
+
+它会从 `webpack` 的配置中的 entry 开始，分析依赖模块，并分别打包。在entry 中 app 属性及其内容会被打包为微信小程序所需要的 app.js／app.json／app.wxss，其余的会生成对应的页面page.js/page.json/page.wxml/page.wxss，如示例的 entry 将会生成如下这些文件，文件内容下文慢慢讲来：
+
+``` js
+// webpack.config.js
+{
+    // ...
+    entry: {
+        app: resolve('./src/main.js'),               // app 字段被识别为 app 类型
+        index: resolve('./src/pages/index/main.js'),   // 其余字段被识别为 page 类型
+        'news/home': resolve('./src/pages/news/home/index.js')
+    }
+}
+
+// 产出文件的结构
+.
+├── app.js
+├── app.json
+├──· app.wxss
+├── components
+│   ├── card$74bfae61.wxml
+│   ├── index$023eef02.wxml
+│   └── news$0699930b.wxml
+├── news
+│   ├── home.js
+│   ├── home.wxml
+│   └── home.wxss
+├── pages
+│   └── index
+│       ├── index.js
+│       ├── index.wxml
+│       └── index.wxss
+└── static
+    ├── css
+    │   ├── app.wxss
+    │   ├── index.wxss
+    │   └── news
+    │       └── home.wxss
+    └── js
+        ├── app.js
+        ├── index.js
+        ├── manifest.js
+        ├── news
+        │   └── home.js
+        └── vendor.js
+```
+
+* wxml
+
+每一个 ```.vue``` 的组件都会被生成为一个 wxml 规范的 template，然后通过 wxml 规范的 import 语法来达到一个复用，同时组件如果涉及到 props 的 data 数据，我们也会做相应的处理，举个实际的例子：
+
+```js
+<template>
+    <div class="my-component">
+        <h1>{{msg}}</h1>
+        <other-component :msg="msg"></other-component>
+    </div>
+</template>
+<script>
+import otherComponent from './otherComponent.vue'
+
+export default {
+  components: { otherComponent },
+  data () {
+    return { msg: 'Hello Vue.js!' }
+  }
+}
+</script>
+```
+
+这样一个 vue 的组件的模版部分会生成相应的 wxml
+
+```js
+<import src="components/other-component$hash.wxml" />
+<template name="component$hash">
+    <view class="my-component">
+        <view class="_h1">{{msg}}</view>
+        <template is="other-component$hash" wx:if="{{ $c[0] }}" data="{{ ...$c[0] }}"></template>
+    </view>
+</template>
+```
+
+细心的开发者可能已经注意到了 other-component(:msg="msg") 被转化成了 <template is="other-component$hash" data="{{ ...$c[0] }}"></template> 。mpvue 在运行时会从根组件开始把所有的组件实例数据合并成一个树形的数据，然后通过 setData 到 appData,$c 是 $children 的缩写。至于那个 0 则是我们的 compiler 处理过后的一个标记，会为每一个子组件打一个特定的不重复的标记。 树形数据结构如下：
+
+```js
+// 这儿数据结构是一个数组，index 是动态的
+{
+  $child: {
+    '0'{
+      // ... root data
+      $child: {
+        '0': {
+          // ... data
+          msg: 'Hello Vue.js!',
+          $child: {
+            // ...data
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+* wxss
+
+这个部分的处理同 web 的处理差异不大，唯一不同在于通过配置生成 .css 为 .wxss ，其中的对于 css 的若干处理，在 postcss-mpvue-wxss 和 px2rpx-loader 这两部分的文档中又详细的介绍。
+
+app.json／page.json
+1.1.1 以上
+
+推荐和小程序一样，将 app.json／page.json 放到页面入口处，使用 copy-webpack-plugin copy 到对应的生成位置。
+
+1.1.1 以下
+
+这部分内容来源于 app 和 page 的 entry 文件，通常习惯是 main.js，你需要在你的入口文件中 export default { config: {} }，这才能被我们的 loader 识别为这是一个配置，需要写成 json 文件。
+
+``` js
+import Vue from 'vue';
+import App from './app';
+
+const vueApp = new Vue(App);
+vueApp.$mount();
+
+// 这个是我们约定的额外的配置
+export default {
+    // 这个字段下的数据会被填充到 app.json ／ page.json
+    config: {
+        pages: ['static/calendar/calendar', '^pages/list/list'], // Will be filled in webpack
+        window: {
+            backgroundTextStyle: 'light',
+            navigationBarBackgroundColor: '#455A73',
+            navigationBarTitleText: '美团汽车票',
+            navigationBarTextStyle: '#fff'
+        }
+    }
+};
+```
+
+同时，这个时候，我们会根据 entry 的页面数据，自动填充到 app.json 中的 pages 字段。 pages 字段也是可以自定义的，约定带有 ^ 符号开头的页面，会放到数组的最前面。
+
+style scoped
+在 vue-loader 中对 style scoped 的处理方式是给每个样式加一个 attr 来标记 module-id，然后在 css 中也给每条 rule 后添加 [module-id]，最终可以形成一个 css 的“作用域空间”。
+
+在微信小程序中目前是不支持 attr 选择器的，所以我们做了一点改动，把 attr 上的 [module-id] 直接写到了 class 里，如下：
+
+``` js
+<!-- .vue -->
+<template>
+    <div class="container">
+        // ...
+    </div>
+</template>
+<style scoped>
+    .container {
+        color: red;
+    }
+</style>
+
+<!-- vue-loader -->
+<template>
+    <div class="container" data-v-23e58823>
+        // ...
+    </div>
+</template>
+<style scoped>
+    .container[data-v-23e58823] {
+        color: red;
+    }
+</style>
+
+<!-- mpvue-loader -->
+<template>
+    <div class="container data-v-23e58823">
+        // ...
+    </div>
+</template>
+<style scoped>
+    .container.data-v-23e58823 {
+        color: red;
+    }
+</style>
+```
+
+## mpvue分包加载优化
 
 package.json修改
 * 升级： "mpvue-loader": "\^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "\^0.1.1"
@@ -957,355 +1332,6 @@ module.exports = {
 
 ```
 
-## 渲染性能优化
-![render](https://user-images.githubusercontent.com/2350193/44185879-af907f80-a148-11e8-8dcb-22aadd4e49a6.png)
-- 每次setData的调用都是一次进程间通信过程，通信开销与setData的数据量正相关。
-
-- setData会引发视图层页面内容的更新，这一耗时操作一定时间中会阻塞用户交互。
-
-- **setData是小程序开发使用最频繁，也是最容易引发性能问题的。**
-
-  
-
-**避免不当使用setData**
-- 使用data在方法间共享数据，**可能增加setData传输的数据量。**。data应仅包括与页面渲染相关的数据。
-- 使用setData传输大量数据，**通讯耗时与数据正相关，页面更新延迟可能造成页面更新开销增加。**仅传输页面中发生变化的数据，使用setData的特殊key实现局部更新。
-- 短时间内频繁调用setData，**操作卡顿，交互延迟，阻塞通信，页面渲染延迟。**避免不必要的setData，对连续的setData调用进行合并。
-- 在后台页面进行setData，**抢占前台页面的渲染资源。**页面切入后台后的setData调用，延迟到页面重新展示时执行。
-
-![one-context](https://user-images.githubusercontent.com/2350193/44186238-db146980-a14a-11e8-8096-bcb8fa6d28b2.png)
-
-
-
-**避免不当使用onPageScroll**
-
-- 只在有必要的时候监听pageScroll事件。不监听，则不会派发。
-- 避免在onPageScroll中执行复杂逻辑
-- 避免在onPageScroll中频繁调用setData
-- 避免滑动时频繁查询节点信息（SelectQuery）用以判断是否显示，部分场景建议使用节点布局橡胶状态监听（inersectionObserver）替代
-
-**使用自定义组件**
-
-在需要频繁更新的场景下，自定义组件的更新只在组件内部进行，不受页面其他部分内容复杂性影响。
-
-
-
-# 官方小程序技术能力规划
-
-## 自定义组件2.0
-
-小程序的几个页面间，存在一些相同或是类似的区域，这时候可以把这些区域逻辑封装成一个自定义组件，代码就可以重用，或者对于比较独立逻辑，也可以把它封装成一个自定义组件，也就是微信去年发布的自定义组件，它让代码得到复用、减少代码量，更方便模块化，优化代码架构组织，也使得模块清晰，后期更好地维护，从而保证更好的性能。
-
-但微信打算在原来的基础上推出的自定义组件2.0，它将拥有更高级的性能：
-
-- usingComponents计划支持全局定义和通配符定义：这意味着不用在每个页面反复定义，可以批量导入目录下的所有自定义组件
-- 计划支持类似Computed和watch的功能，它能使代码逻辑更清晰
-- 计划支持Component构造器插件，在实例化一个自定义组件的时候，允许你在构造器的这个阶段，加入一些逻辑，方便进行一些扩展，甚至是可以扩展成VUE的语法
-
-## npm支持
-
-目前小程序开发的痛点是：开源组件要手动复制到项目，后续更新组件也需要手动操作。不久的将来，小程序将支持npm包管理，有了这个之后，想要引入一些开源的项目就变得很简单了，只要在项目里面声明，然后用简单的命令安装，就可以使用了。
-
-## 官方自定义组件
-
-微信小程序团队表示，他们在考虑推出一些官方自定义组件，为什么不内置到基础库里呢？因为内置组件要提供给开发者，这个组件一定是开发者很难实现或者是无法实现的一个能力。所以他们更倾向于封装成自定义组件，想基于这些内置组件里，封装一些比较常见的、交互逻辑比较复杂的组件给大家使用，让大家更容易开发。类似弹幕组件，开发者就不用关注弹幕怎么飘，可以节省开发者的开发成本。
-
-同时，他们也想给开发者提供一些规范和一些模板，让开发者设计出好用的自定义组件，更好地被大家去使用。
-
- ## 添加体验评分
-
-当小程序加载太慢时，可能会导致用户的流失，而小程序的开发者可能会面临着不知道如何定位问题或不知如何解决问题的困境。
-
-为此，小程序即将推出一个体验评分的功能，这是为了帮助开发者可以检查出小程序有一些什么体验不好的地方，也会同时给出一份优化的指引建议。
-
-## 原生组件同层渲染
-
-小程序在最初的技术选型时，引入了原生组件的概念，因为原生组件可以使小程序的能力更加丰富，比如地图、音视频的能力，但是原生组件是由客户端原生渲染的，导致了原生组件的层级是最高的，开发者很容易遇到打开调试的问题，发现视频组件挡在了vConsole上。
-
-为了解决这个问题，当时微信做了一个过渡的方案：cover-view。cover-view可以覆盖在原生组件之上，这一套方案解决了大部分的需求场景。比如说视频组件上很多的按钮、标题甚至还有动画的弹幕，这些都是用cover-view去实现的，但它还是没有完全解决原生组件的开发体验问题，因为cover-view有一些限制：
-
-- 无法与其他组件混在一起渲染
-- 没有完整的触摸事件
-- cover-view对样式的表现有差异
-- cover-view对样式的支持度不够高
-
-因此微信决定将用同层渲染取代cover-view，它能像普通组件一样使用，原生组件的层级不再是最高，而是和其他的非原生组件在同一层级渲染，可完全由z-index控制，可完全支持触摸事件。
-
-微信表示，同层渲染在iOS平台小程序上已经开始内测，会很快开放给开发者，Android平台已经取得突破性进展，目前正在做一轮封装的工作，开放指日可待。
-
-# wepy vs mpvue
-
-## 数据流管理
-相比传统的小程序框架，这个一直是我们作为资深开发者比较期望去解决的，在web开发中，随着 flux、redux、vuex 等多个数据流工具出现，我们也期望在业务复杂的小程序中使用。
-
-* WePY 默认支持 Redux，在脚手架生成项目的时候可以内置
-
-* mpvue 作为 vue 的移植版本，当然支持 vuex，同样在脚手架生成项目的时候可以内置
-
-## 组件化
-如果你和我们一样，经历了从无到有的小程序业务开发，建议阅读【小程序的组件化开发】章节，进行官方语法的组件库开发（从基础库 1.6.3 开始，官方提供了组件化解决方案）。
-
-* WePY 类似 vue 实现了单文件组件，最大的差别是文件后缀 .wpy，只是写法上会有差异，具体可以查看【主流框架使用案例 1：WePY】章节，学习起来有一定成本，不过也会很快适应：
-
-```
-export default class Index extends wepy.page {}
-```
-    
-* mpvue 作为 vue 的移植版本，支持单文件组件，template、script 和 style 都在一个 .vue 文件中，和 vue 的写法类似，所以对 vue 开发熟悉的同学会比较适应。
-
-## 工程化
-我们在第一节中提到过：所有的小程序开发依赖官方提供的开发者工具。开发者工具简单直观，对调试小程序很有帮助，现在也支持腾讯云（目前我们还没有使用，但是对新的一些开发者还是有帮助的），可以申请测试报告查看小程序在真实的移动设备上运行性能和运行效果，但是它本身没有类似前端工程化中的概念和工具。
-
-* WePY 内置了构建，通过 wepy init 命令初始化项目，大致流程如下：
-
-- wepy-cli 会判断模版是在远程仓库还是在本地，如果在本地则会立即跳到第 3 步，反之继续进行。
-- 会从远程仓库下载模版，并保存到本地。
-- 询问开发者 Project name 等问题，依据开发者的回答，创建项目。
-
-* mpvue 沿用了 vue 中推崇的 webpack 作为构建工具，但同时提供了一些自己的插件以及配置文件的一些修改，比如：
-
-- 不再需要 html-webpack-plugin
-- 基于 webpack-dev-middleware 修改成 webpack-dev-middleware-hard-disk
-- 最大的变化是基于 webpack-loader 修改成 mpvue-loader
-- 但是配置方式还是类似，分环境配置文件，最终都会编译成小程序支持的目录结构和文件后缀。
-
-## 综合比较
-| 对比\框架 | 微信小程序 | mpvue | wepy |
-| ------ | ------ | ------ | ------ |
-| 语法规范 | 小程序开发规范 | vue.js | 类vue.js |
-| 标签集合 | 小程序 | htm l + 小程序 | 小程序 |
-| 样式规范 | wxss | sass,less,postcss | sass,less,styus |
-| 组件化 | 无组件化机制 | vue规范 | 自定义组件规范 |
-| 多段复用 | 不可复用 | 支持h5 | 支持h5 |
-| 自动构建 | 无自动构建 | webpack | 框架内置 |
-| 上手成本 | 全新学习 | vue 学习 | vue 和 wepy |
-| 数据管理 | 不支持 | vuex | redux |
-
-## 对于选型的一些个人看法
-先说结论：选择mpvue。
-
-wepy vs mpvue。
-
-理由：
-
-**工程化**
-原生开发因为不带工程化，诸如NPM包（未来会引入）、ES7、图片压缩、PostCss、pug、ESLint等等不能用。如果自己要搭工程化或者去yeomen上面找。不如直接使用wepy或mpvue。mpvue和wepy都可以和小程序原生开发混写。[参考mpvue-echart](#https://github.com/mpvue/examples/tree/master/echarts)，[参考wepy](https://github.com/Tencent/wepy/issues/1560)。
-而问题在于wepy没有引入webpack(wepy@2.0.x任然没有引入)，以上说的这些东西都要造轮子（作者造或自己造）。没有引入webpack是一个重大的硬伤。社区维护的成熟webpack显然更稳定，轮子更多。
-
-**维护**
-wepy也是社区维护的，是官方的？其实wepy的主要开发者只有作者一人，附上一个[contrubutors](https://github.com/Tencent/wepy/graphs/contributors)链接。另外被官方招安了也是后来的事，再说腾讯要有精力帮着一起维护好wepy，为什么不花精力在小程序原生开发上呢？再来看看mpvue，是美团一个前端小组维护的。
-
-**学习成本**
-vue的学习曲线比较平缓。mpvue是vue的子集。所以mpvue的学习成本会低于wepy。尤其是之前技术栈有学过用过vue的。
-
-**未来规划**
-mpvue已经支持web和小程序。因为mpvue基于AST，所以未来可以支持支付宝小程序和快应用。他们也是有这样的规划。
-
-请在需求池下面自己找
-![mpvue-feature](https://user-images.githubusercontent.com/2350193/44379522-f9a6a600-a538-11e8-8939-273ace7871ae.jpg)
-
-**坑**
-两者都有各自的坑。但是我觉得有一些wepy的坑是没法容忍的。比如[repeat组建里面用computed得到的列表全是同一套数据](https://github.com/Tencent/wepy/issues/1231)而且1.x是没法解决的。
-wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更多，而且wepy有些坑有些碍于架构设计没办法解决。
-
-# vue与mpvue
-> Vue.js 小程序版, fork 自 vuejs/vue@2.4.1，保留了 vue runtime 能力，添加了小程序平台的支持。
-`mpvue` 是一个使用 `Vue.js` 开发小程序的前端框架。框架基于 `Vue.js` 核心，`mpvue` 修改了 `Vue.js` 的 runtime 和 compiler 实现，使其可以运行在小程序环境中，从而为小程序开发引入了整套 `Vue.js` 开发体验。
-
-
-## 框架原理
-`mpvue` 保留了 vue.runtime 核心方法，无缝继承了 `Vue.js` 的基础能力。
-`mpvue-template-compiler` 提供了将 vue 的模板语法转换到小程序的 wxml 语法的能力。
-修改了 vue 的构建配置，使之构建出符合小程序项目结构的代码格式： json/wxml/wxss/js 文件。
-
-### mpvue-loader
-`mpvue-loader` 是 `vue-loader` 的一个扩展延伸版，类似于超集的关系，除了 `vue-loader` 本身所具备的能力之外，它还会产出微信小程序所需要的文件结构和模块内容。
-
-* entry
-
-它会从 `webpack` 的配置中的 entry 开始，分析依赖模块，并分别打包。在entry 中 app 属性及其内容会被打包为微信小程序所需要的 app.js／app.json／app.wxss，其余的会生成对应的页面page.js/page.json/page.wxml/page.wxss，如示例的 entry 将会生成如下这些文件，文件内容下文慢慢讲来：
-
-``` js
-// webpack.config.js
-{
-    // ...
-    entry: {
-        app: resolve('./src/main.js'),               // app 字段被识别为 app 类型
-        index: resolve('./src/pages/index/main.js'),   // 其余字段被识别为 page 类型
-        'news/home': resolve('./src/pages/news/home/index.js')
-    }
-}
-
-// 产出文件的结构
-.
-├── app.js
-├── app.json
-├──· app.wxss
-├── components
-│   ├── card$74bfae61.wxml
-│   ├── index$023eef02.wxml
-│   └── news$0699930b.wxml
-├── news
-│   ├── home.js
-│   ├── home.wxml
-│   └── home.wxss
-├── pages
-│   └── index
-│       ├── index.js
-│       ├── index.wxml
-│       └── index.wxss
-└── static
-    ├── css
-    │   ├── app.wxss
-    │   ├── index.wxss
-    │   └── news
-    │       └── home.wxss
-    └── js
-        ├── app.js
-        ├── index.js
-        ├── manifest.js
-        ├── news
-        │   └── home.js
-        └── vendor.js
-```
-
-* wxml
-
-每一个 ```.vue``` 的组件都会被生成为一个 wxml 规范的 template，然后通过 wxml 规范的 import 语法来达到一个复用，同时组件如果涉及到 props 的 data 数据，我们也会做相应的处理，举个实际的例子：
-
-```js
-<template>
-    <div class="my-component">
-        <h1>{{msg}}</h1>
-        <other-component :msg="msg"></other-component>
-    </div>
-</template>
-<script>
-import otherComponent from './otherComponent.vue'
-
-export default {
-  components: { otherComponent },
-  data () {
-    return { msg: 'Hello Vue.js!' }
-  }
-}
-</script>
-```
-
-这样一个 vue 的组件的模版部分会生成相应的 wxml
-
-```js
-<import src="components/other-component$hash.wxml" />
-<template name="component$hash">
-    <view class="my-component">
-        <view class="_h1">{{msg}}</view>
-        <template is="other-component$hash" wx:if="{{ $c[0] }}" data="{{ ...$c[0] }}"></template>
-    </view>
-</template>
-```
-
-细心的开发者可能已经注意到了 other-component(:msg="msg") 被转化成了 <template is="other-component$hash" data="{{ ...$c[0] }}"></template> 。mpvue 在运行时会从根组件开始把所有的组件实例数据合并成一个树形的数据，然后通过 setData 到 appData,$c 是 $children 的缩写。至于那个 0 则是我们的 compiler 处理过后的一个标记，会为每一个子组件打一个特定的不重复的标记。 树形数据结构如下：
-
-```js
-// 这儿数据结构是一个数组，index 是动态的
-{
-  $child: {
-    '0'{
-      // ... root data
-      $child: {
-        '0': {
-          // ... data
-          msg: 'Hello Vue.js!',
-          $child: {
-            // ...data
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-* wxss
-
-这个部分的处理同 web 的处理差异不大，唯一不同在于通过配置生成 .css 为 .wxss ，其中的对于 css 的若干处理，在 postcss-mpvue-wxss 和 px2rpx-loader 这两部分的文档中又详细的介绍。
-
-app.json／page.json
-1.1.1 以上
-
-推荐和小程序一样，将 app.json／page.json 放到页面入口处，使用 copy-webpack-plugin copy 到对应的生成位置。
-
-1.1.1 以下
-
-这部分内容来源于 app 和 page 的 entry 文件，通常习惯是 main.js，你需要在你的入口文件中 export default { config: {} }，这才能被我们的 loader 识别为这是一个配置，需要写成 json 文件。
-
-``` js
-import Vue from 'vue';
-import App from './app';
-
-const vueApp = new Vue(App);
-vueApp.$mount();
-
-// 这个是我们约定的额外的配置
-export default {
-    // 这个字段下的数据会被填充到 app.json ／ page.json
-    config: {
-        pages: ['static/calendar/calendar', '^pages/list/list'], // Will be filled in webpack
-        window: {
-            backgroundTextStyle: 'light',
-            navigationBarBackgroundColor: '#455A73',
-            navigationBarTitleText: '美团汽车票',
-            navigationBarTextStyle: '#fff'
-        }
-    }
-};
-```
-
-同时，这个时候，我们会根据 entry 的页面数据，自动填充到 app.json 中的 pages 字段。 pages 字段也是可以自定义的，约定带有 ^ 符号开头的页面，会放到数组的最前面。
-
-style scoped
-在 vue-loader 中对 style scoped 的处理方式是给每个样式加一个 attr 来标记 module-id，然后在 css 中也给每条 rule 后添加 [module-id]，最终可以形成一个 css 的“作用域空间”。
-
-在微信小程序中目前是不支持 attr 选择器的，所以我们做了一点改动，把 attr 上的 [module-id] 直接写到了 class 里，如下：
-
-``` js
-<!-- .vue -->
-<template>
-    <div class="container">
-        // ...
-    </div>
-</template>
-<style scoped>
-    .container {
-        color: red;
-    }
-</style>
-
-<!-- vue-loader -->
-<template>
-    <div class="container" data-v-23e58823>
-        // ...
-    </div>
-</template>
-<style scoped>
-    .container[data-v-23e58823] {
-        color: red;
-    }
-</style>
-
-<!-- mpvue-loader -->
-<template>
-    <div class="container data-v-23e58823">
-        // ...
-    </div>
-</template>
-<style scoped>
-    .container.data-v-23e58823 {
-        color: red;
-    }
-</style>
-```
-
 # 参考链接
 
 以上内容部分来自：
@@ -1314,5 +1340,6 @@ style scoped
 - [2018微信公开课第七季上海站·小程序专场](http://daxue.qq.com/content/online/id/4107)
 - [小程序中使用iconfont](https://juejin.im/entry/5a54b73b6fb9a01ca7135335)
 - [微信小程序的下一步：支持NPM、小程序云、可视化编程、支持分包](http://www.infoq.com/cn/news/2018/07/wchat-miniprog-support)
-- [开源框架mpvue解析](https://tech.meituan.com/mt_mpvue_development_framework.html)
 - [mpvue-docs](http://mpvue.com/build/mpvue-loader/)
+- [使用Mpvue开发微信小程序的最佳实践](https://juejin.im/post/5afd836251882567105ff8b4)
+- [用Vue.js开发微信小程序：开源框架mpvue解析](https://tech.meituan.com/mt_mpvue_development_framework.html)
