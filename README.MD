@@ -25,7 +25,6 @@
   - [官方自定义组件](#官方自定义组件)
   - [添加体验评分](#添加体验评分)
   - [原生组件同层渲染](#原生组件同层渲染)
-- [参考链接](#参考链接)
 - [wepy vs mpvue](#wepy-vs-mpvue)
   - [数据流管理](#数据流管理)
   - [组件化](#组件化)
@@ -38,7 +37,8 @@
      - [runtime](#runtime)
      - [complier](#complier)
      - [mpvue-loader](#mpvue-loader)
-  - [mpvue分包加载优化](#mpvue分包加载优化)
+  - [分包加载](#分包加载)
+- [参考链接](#参考链接)
 
 # 开言
 
@@ -1094,7 +1094,7 @@ style scoped
 </style>
 ```
 
-## mpvue分包加载优化
+## 分包加载
 
 package.json修改
 * 升级： "mpvue-loader": "\^1.1.2-rc.4" "webpack-mpvue-asset-plugin": "\^0.1.1"
