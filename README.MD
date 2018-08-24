@@ -1268,7 +1268,9 @@ style scoped
 
 以上内容部分来自：
 - [微信小程序架构分析 (上)](https://zhuanlan.zhihu.com/p/22754296)
-- [ 微信小程序架构解析](https://zhuanlan.zhihu.com/p/25105936)
+- [微信小程序架构解析](https://zhuanlan.zhihu.com/p/25105936)
 - [2018微信公开课第七季上海站·小程序专场](http://daxue.qq.com/content/online/id/4107)
 - [小程序中使用iconfont](https://juejin.im/entry/5a54b73b6fb9a01ca7135335)
 - [微信小程序的下一步：支持NPM、小程序云、可视化编程、支持分包](http://www.infoq.com/cn/news/2018/07/wchat-miniprog-support)
+- [开源框架mpvue解析](https://tech.meituan.com/mt_mpvue_development_framework.html)
+- [mpvue-docs](http://mpvue.com/build/mpvue-loader/)
