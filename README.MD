@@ -35,6 +35,7 @@
 - [mpvue](#mpvue)
   - [框架原理](#框架原理)
      - [mpvue-loader](#mpvue-loader)
+     - [compiler](#compiler)
      - [runtime](#runtime)
   - [Class和Style为什么暂不支持组件](#Class和Style为什么暂不支持组件)
   - [分包加载](#分包加载)
