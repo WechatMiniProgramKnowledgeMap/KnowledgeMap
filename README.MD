@@ -1313,9 +1313,7 @@ export function initMP (mpType, next) {
 ## Class和Style为什么暂不支持组件
 原因：目前的组件是使用小程序的 template 标签实现的，给组件指定的class和style是挂载在template标签上，而template 标签不支持 class 及 style 属性。
 
-解决方案： 
-- 给自定义组件指定的标签直接挂载在子元素上。
-- 在自定义组件上绑定class到一个props属性上。
+解决方案： 在自定义组件上绑定class或style到一个props属性上。
 
 ```js
  // 组件ComponentA.vue
