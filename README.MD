@@ -913,7 +913,7 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 
 新Virtual DOM和旧Virtual DOM之间需要做一个patch，找出diff。patch完了之后的diff怎么更新视图，也就是如何给这些DOM加入attr、class、style等DOM属性呢？vue中有nextTick的概念用以更新视图，mpvue这块对于小程序的`setData`应该怎么处理呢？
 
-另外个问题在于小程序的Virtual DOM怎么生成？也就是怎么将template编译成`render function`。这当中还涉及到[运行时-编译器-vs-只包含运行时](https://cn.vuejs.org/v2/guide/installation.html#%E8%BF%90%E8%A1%8C%E6%97%B6-%E7%BC%96%E8%AF%91%E5%99%A8-vs-%E5%8F%AA%E5%8C%85%E5%90%AB%E8%BF%90%E8%A1%8C%E6%97%B6)，显然如果要提高性能、减少包大小、输出wxml、mpvue也要提供预编译的能力。因为要预输出wxml且没法动态改变DOM，所以动态组件，自定义 render，和<script type="text/x-template"> 字符串模版等都不支持([参考](http://mpvue.com/mpvue/#_15))。
+另外个问题在于小程序的Virtual DOM怎么生成？也就是怎么将template编译成`render function`。这当中还涉及到[运行时-编译器-vs-只包含运行时](https://cn.vuejs.org/v2/guide/installation.html#%E8%BF%90%E8%A1%8C%E6%97%B6-%E7%BC%96%E8%AF%91%E5%99%A8-vs-%E5%8F%AA%E5%8C%85%E5%90%AB%E8%BF%90%E8%A1%8C%E6%97%B6)，显然如果要提高性能、减少包大小、输出wxml、mpvue也要提供预编译的能力。因为要预输出wxml且没法动态改变DOM，所以动态组件，自定义 render，和`<script type="text/x-template">` 字符串模版等都不支持([参考](http://mpvue.com/mpvue/#_15))。
 
 
 另外还有一些其他问题，最后总结一下
