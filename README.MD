@@ -346,14 +346,6 @@ Page({
 - jscore是不带http request、websocket、storage等功能的，那是webkit带的
 - 小程序的wx.request是不是遵循fetch API规范实现的呢？答案，显然不是。因为没有Promise。
 
-**3.先授权获取用户信息再login会发生什么？**
-
-<img src="https://user-images.githubusercontent.com/35895755/44244965-268d4d00-a209-11e8-8ef4-b80cc7a78af7.png" width="70%" height="70%" />
-<img src="https://user-images.githubusercontent.com/35895755/44379952-0af0b200-a53b-11e8-86be-640bf651bc9e.png" width="50%" height="50%" />
-
-- 用户授权时，开放平台使用旧的session_key对用户信息进行加密。调用wx.login重新登录，会刷新session_key，这时后端服务从开放平台获取到新session_key，但是无法对老session_key加密过的数据解密，用户信息获取失败
-- 在用户信息授权之前先调用wx.checkSession呢？wx.checkSession检查登录态，并且保证wx.login不会刷新session_key，从而让后端服务正确解密数据。但是这里存在一个问题，如果小程序较长时间不用导致session_key过期，则wx.login必定会重新生成session_key，从而再一次导致用户信息解密失败。
-
 # View - WXML
 
 WXML（WeiXin Markup Language）
@@ -616,6 +608,13 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 - 在调用wx.login时会直接更新session_key，导致旧session_key失效
 - 小程序内先调用wx.checkSession检查登录态，并保证没有过期的session_key不会被更新，再调用wx.login获取code。接着用户授权小程序获取用户信息，小程序拿到加密后的用户数据，把加密数据和code传给后端服务。后端通过code拿到session_key并解密数据，将解密后的用户信息返回给小程序
 
+**面试题：先授权获取用户信息再login会发生什么？**
+
+<img src="https://user-images.githubusercontent.com/35895755/44244965-268d4d00-a209-11e8-8ef4-b80cc7a78af7.png" width="70%" height="70%" />
+<img src="https://user-images.githubusercontent.com/35895755/44379952-0af0b200-a53b-11e8-86be-640bf651bc9e.png" width="50%" height="50%" />
+
+- 用户授权时，开放平台使用旧的session_key对用户信息进行加密。调用wx.login重新登录，会刷新session_key，这时后端服务从开放平台获取到新session_key，但是无法对老session_key加密过的数据解密，用户信息获取失败
+- 在用户信息授权之前先调用wx.checkSession呢？wx.checkSession检查登录态，并且保证wx.login不会刷新session_key，从而让后端服务正确解密数据。但是这里存在一个问题，如果小程序较长时间不用导致session_key过期，则wx.login必定会重新生成session_key，从而再一次导致用户信息解密失败。
 
 # 性能优化
 
