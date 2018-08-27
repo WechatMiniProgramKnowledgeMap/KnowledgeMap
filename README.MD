@@ -34,8 +34,8 @@
   - [选型的个人看法](#选型的个人看法)
 - [mpvue](#mpvue)
   - [框架原理](#框架原理)
-     - [runtime和complier](#runtime和complier)
      - [mpvue-loader](#mpvue-loader)
+     - [runtime](#runtime)
   - [分包加载](#分包加载)
 - [参考链接](#参考链接)
 
