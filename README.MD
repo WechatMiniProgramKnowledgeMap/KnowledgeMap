@@ -37,7 +37,7 @@
      - [mpvue-loader](#mpvue-loader)
      - [compiler](#compiler)
      - [runtime](#runtime)
-  - [Class和Style为什么暂不支持组件](#Class和Style为什么暂不支持组件)
+  - [Class和Style为什么暂不支持组件](#class和style为什么暂不支持组件)
   - [分包加载](#分包加载)
 - [参考链接](#参考链接)
 
@@ -863,7 +863,7 @@ export default class Index extends wepy.page {}
 | 上手成本 | 全新学习 | vue 学习 | vue 和 wepy |
 | 数据管理 | 不支持 | vuex | redux |
 
-## 选型的一些个人看法
+## 选型的个人看法
 先说结论：选择mpvue。
 
 wepy vs mpvue。
