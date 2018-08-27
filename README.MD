@@ -574,9 +574,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 - 安卓系统下，小程序授权获取用户信息之后，删除小程序再重新获取，并重新授权，得到旧签名，导致第一次授权失败
 
 - 开发者工具上，授权获取用户信息之后，如果清缓存选择全部清除，则即使使用了wx.checkSession，并且在session_key有效期内，授权获取用户信息也会得到新的session_key
-  
-  
-  
+
 ## 小程序HTTP2支持情况
 ### HTTP2支持情况：模拟器与真机均不支持
 为了验证小程序对HTTP的支持适配情况，我找了两个服务器做测试，一个是网上搜索到支持HTTP2的服务器，一个是我本地起的一个HTTP2服务器。测试中所有请求方法均使用`wx.request`。
@@ -610,9 +608,7 @@ Native组件层在WebView层之上。这目前带来了一些问题：
 3. 当把服务器的`allowHTTP1`,设置为`true`,并在请求时处理相关相关请求参数后，模拟器能正常访问接口，并打印出对应的HTTP请求版本
 
     ![WechatIMG15](https://user-images.githubusercontent.com/17850400/44331318-d0840800-a49b-11e8-9931-a95c1fe2b0c4.jpeg)
-    
-    
-    
+
 # 授权获取用户信息流程
 <img src="https://user-images.githubusercontent.com/35895755/44379940-fa403c00-a53a-11e8-9165-21b217496aad.png" width="70%" height="70%" />
 
@@ -902,18 +898,18 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 
 **两个大方向**
 
-- 通过`mpvue`提供mp的runtime
+- 通过`mpvue`提供mp的runtime适配小程序
 - 通过`mpvue-loader`产出微信小程序所需要的文件结构和模块内容。
 
-**几个具体问题**
+**七个具体问题**
 
 要了解mpvue原理必然要了解vue原理，这是大前提。但是要讲清楚vue原理需要花费大量的篇幅，不如参考[learnVue](https://github.com/answershuto/learnVue)。
 
 现在假设您对vue原理有个大概的了解。
 
-由于Vue使用了Virtual DOM，所以虚拟Virtual DOM可以在任何支持JavaScript语言的平台上操作，譬如说目前Vue支持浏览器平台或weex。也可以是mp(小程序)，通过[mpvue](https://github.com/Meituan-Dianping/mpvue)。那么最后虚拟DOM如何映射到真实的DOM节点上呢？vue为平台做了一层适配层，浏览器平台见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/web/runtime/node-ops.js)以及weex平台见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/weex/runtime/node-ops.js)。不同平台之间通过适配层对外提供相同的接口，Virtual DOM进行操作Real DOM节点的时候，只需要调用这些适配层的接口即可，而内部实现则不需要关心，它会根据平台的改变而改变。
+由于Vue使用了Virtual DOM，所以虚拟Virtual DOM可以在任何支持JavaScript语言的平台上操作，譬如说目前Vue支持浏览器平台或weex，也可以是mp(小程序)。那么最后虚拟DOM如何映射到真实的DOM节点上呢？vue为平台做了一层适配层，浏览器平台见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/web/runtime/node-ops.js)、weex平台见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/weex/runtime/node-ops.js)，小程序见[runtime/node-ops.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/node-ops.js)。不同平台之间通过适配层对外提供相同的接口，Virtual DOM进行操作Real DOM节点的时候，只需要调用这些适配层的接口即可，而内部实现则不需要关心，它会根据平台的改变而改变。
 
-所以思路肯定是往增加一个mp平台的runtime方向走。
+所以思路肯定是往增加一个mp平台的runtime方向走。但问题是小程序不能操作DOM，所以mp下的`node-ops.js`里面的实现都是直接`return obj`。
 
 新Virtual DOM和旧Virtual DOM之间需要做一个patch，找出diff。patch完了之后的diff怎么更新视图，也就是如何给这些DOM加入attr、class、style等DOM属性呢？vue中有nextTick的概念用以更新视图，mpvue这块对于小程序的`setData`应该怎么处理呢？
 
@@ -922,20 +918,30 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 
 另外还有一些其他问题，最后总结一下
 
-- 如何预编译生成`render function`
-- 如何预编译生成wxml，wxss，wxs
-- 如何patch出diff
-- 如何更新视图
-- 如何建立vue实例与小程序 Page 实例关联
-- 如何建立小程序和vue生命周期映射关系，能在小程序生命周期中触发vue生命周期
-- 如何建立小程序事件代理机制，在事件代理函数中触发与之对应的vue组件事件响应
+- 1.如何预编译生成`render function`
+- 2.如何预编译生成wxml，wxss，wxs
+- 3.如何patch出diff
+- 4.如何更新视图
+- 5.如何建立小程序事件代理机制，在事件代理函数中触发与之对应的vue组件事件响应
+- 6.如何建立vue实例与小程序 Page 实例关联
+- 7.如何建立小程序和vue生命周期映射关系，能在小程序生命周期中触发vue生命周期
+
+
+**[platform/mp的目录结构]((https://github.com/Meituan-Dianping/mpvue/tree/master/src/platforms/mp))**
+```
+.
+├── compiler //解决问题1，mpvue-template-compiler源码部分
+├── runtime //解决问题3 4 5 6 7
+├── util //工具方法
+├── entry-compiler.js //mpvue-template-compiler的入口。package.json相关命令会自动生成mpvue-template-compiler这个package。
+├── entry-runtime.js //对外提供Vue对象，当然是mpvue
+└── join-code-in-build.js //编译出SDK时的修复
+```
 
 **后面的内容逐步解答这几个问题，也就弄明白了原理**
 
-### runtime和complier
-
 ### mpvue-loader
-`mpvue-loader` 是 `vue-loader` 的一个扩展延伸版，类似于超集的关系，除了 `vue-loader` 本身所具备的能力之外，它还会利用`mpvue-template-compiler`产出微信小程序所需要的文件结构和模块内容。
+[mpvue-loader](https://github.com/mpvue/mpvue-loader) 是 [vue-loader](https://github.com/vuejs/vue-loader) 的一个扩展延伸版，类似于超集的关系，除了 vue-loader](https://github.com/vuejs/vue-loader) 本身所具备的能力之外，它还会利用[mpvue-template-compiler](https://github.com/Meituan-Dianping/mpvue/tree/master/packages/mpvue-template-compiler)生成`render function`。
 
 * entry
 
@@ -986,12 +992,11 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 ```
 
 * wxml
-
 每一个 ```.vue``` 的组件都会被生成为一个 wxml 规范的 template，然后通过 wxml 规范的 import 语法来达到一个复用，同时组件如果涉及到 props 的 data 数据，我们也会做相应的处理，举个实际的例子：
 
 ```js
 <template>
-    <div class="my-component">
+    <div class="my-component" @click="test">
         <h1>{{msg}}</h1>
         <other-component :msg="msg"></other-component>
     </div>
@@ -1003,6 +1008,9 @@ export default {
   components: { otherComponent },
   data () {
     return { msg: 'Hello Vue.js!' }
+  },
+  methods: {
+    test() {}
   }
 }
 </script>
@@ -1013,14 +1021,14 @@ export default {
 ```js
 <import src="components/other-component$hash.wxml" />
 <template name="component$hash">
-    <view class="my-component">
+    <view class="my-component" bindtap="handleProxy">
         <view class="_h1">{{msg}}</view>
         <template is="other-component$hash" wx:if="{{ $c[0] }}" data="{{ ...$c[0] }}"></template>
     </view>
 </template>
 ```
 
-细心的开发者可能已经注意到了 other-component(:msg="msg") 被转化成了 <template is="other-component$hash" data="{{ ...$c[0] }}"></template> 。mpvue 在运行时会从根组件开始把所有的组件实例数据合并成一个树形的数据，然后通过 setData 到 appData,$c 是 $children 的缩写。至于那个 0 则是我们的 compiler 处理过后的一个标记，会为每一个子组件打一个特定的不重复的标记。 树形数据结构如下：
+可能已经注意到了 other-component(:msg="msg") 被转化成了 <template is="other-component$hash" data="{{ ...$c[0] }}"></template> 。mpvue 在运行时会从根组件开始把所有的组件实例数据合并成一个树形的数据，然后通过 setData 到 appData,`$c `是 $children 的缩写。至于那个 0 则是我们的 compiler 处理过后的一个标记，会为每一个子组件打一个特定的不重复的标记。 树形数据结构如下：
 
 ```js
 // 这儿数据结构是一个数组，index 是动态的
@@ -1121,6 +1129,187 @@ style scoped
     }
 </style>
 ```
+
+* compiler
+
+生产出的内容是：
+
+```js
+(function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+// mpvue-template-compiler会利用AST预编译生成一个render function用以生成Virtual DOM。
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  // _c创建虚拟节点，参考https://github.com/Meituan-Dianping/mpvue/blob/master/packages/mpvue/index.js#L3606
+  // 以及https://github.com/Meituan-Dianping/mpvue/blob/master/packages/mpvue/index.js#L3680
+  return _c('div', {
+    staticClass: "my-component"
+  }, [_c('h1', [_vm._v(_vm._s(_vm.msg))]), _vm._v(" "), _c('other-component', {
+    attrs: {
+      "msg": _vm.msg,
+      "mpcomid": '0'
+    }
+  })], 1)
+}
+
+// staticRenderFns的作用是静态渲染，在更新时不会进行patch，优化性能。而staticRenderFns是个空数组。
+var staticRenderFns = []
+render._withStripped = true
+var esExports = { render: render, staticRenderFns: staticRenderFns }
+/* harmony default export */ __webpack_exports__["a"] = (esExports);
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+     require("vue-hot-reload-api").rerender("data-v-54ad9125", esExports)
+  }
+}
+
+/***/ })
+```
+
+compiler相关，也就是template预编译这块，可以参考《[聊聊Vue的template编译](https://github.com/answershuto/learnVue/blob/master/docs/%E8%81%8A%E8%81%8AVue%E7%9A%84template%E7%BC%96%E8%AF%91.MarkDown#createcompiler)》来搞明白。原理是一样的。
+
+说回mpvue，mpvue自己实现了`export { compile, compileToFunctions, compileToWxml }`([链接](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/compiler/index.js))其中`compileToWxml`是用来生成上面提到的wxml，具体代码[在这](https://github.com/mpvue/mpvue-loader/blob/master/lib/mp-compiler/index.js#L30)。
+
+另外mpvue是不需要提供[运行时-编译器](https://cn.vuejs.org/v2/guide/installation.html#%E8%BF%90%E8%A1%8C%E6%97%B6-%E7%BC%96%E8%AF%91%E5%99%A8-vs-%E5%8F%AA%E5%8C%85%E5%90%AB%E8%BF%90%E8%A1%8C%E6%97%B6)的，虽然理论上是能够做到的。因为小程序不能操作DOM，即便提供了运行时-编译器也产生不了界面。
+
+**到此为止解答了问题1、2**
+
+### runtime
+[目录结构]((https://github.com/Meituan-Dianping/mpvue/tree/master/src/platforms/mp/runtime))
+
+```
+.
+├── events.js //解答问题5
+├── index.js //入口提供Vue对象，以及$mount，和各种初始化
+├── liefcycle //解答问题6、7
+├── node-ops.js //操作真实DOM的相关实现，因为小程序不能操作DOM，所以这里都是直接返回
+├── patch.js //解答问题3
+└── render.js //解答问题4
+```
+
+**[patch.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/patch.js)**
+
+和vue使用的`createPatchFunction`保持一致，任然是旧树和新树进行patch产出diff，但是多了一行this.$updateDataToMP()用以更新。
+
+**[render.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/render.js)**
+
+两个核心的方法`initDataToMP`、`updateDataToMP`。
+
+`initDataToMP`收集vm上的data，然后调用小程序Page示例的`setData`渲染。
+
+`updateDataToMP`在每次patch，也就是依赖收集发现数据改变时更新(参考patch.js代码)，这部分一样会使用`nextTick`和队列。最终使用了节流阀`throttleSetData`，50秒毫秒用以控制频率以解决频繁修改Data会大量传输Data数据导致的性能问题。
+
+其中`collectVmData`最终也是用到了`formatVmData`。尤其要注意的事一句注释：
+
+> getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
+
+我们又知道，service到view是两个线程间通信，如果Data含有大量数据，增加了传输数据量，加大了传输成本，将会造成性能下降。
+
+**[events.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/events.js)**
+
+正如官网所说的，这里使用`eventTypeMap`做了各[事件的隐射](http://mpvue.com/mpvue/#_13)
+```js
+import { getComKey, eventTypeMap } from '../util/index'
+```
+
+```js
+// 用于小程序的 event type 到 web 的 event
+export const eventTypeMap = {
+  tap: ['tap', 'click'],
+  touchstart: ['touchstart'],
+  touchmove: ['touchmove'],
+  touchcancel: ['touchcancel'],
+  touchend: ['touchend'],
+  longtap: ['longtap'],
+  input: ['input'],
+  blur: ['change', 'blur'],
+  submit: ['submit'],
+  focus: ['focus'],
+  scrolltoupper: ['scrolltoupper'],
+  scrolltolower: ['scrolltolower'],
+  scroll: ['scroll']
+}
+```
+
+使用了`handleProxyWithVue`方法来代理小程序事件到vue事件。
+
+另外看下作者自己对这部分的[思路](https://tech.meituan.com/mt_mpvue_development_framework.html)
+
+> **事件代理机制**：用户交互触发的数据更新通过事件代理机制完成。在 Vue.js 代码中，事件响应函数对应到组件的 method， Vue.js 自动维护了上下文环境。然而在小程序中并没有类似的机制，又因为 Vue.js 执行环境中维护着一份实时的虚拟 DOM，这与小程序的视图层完全对应，我们思考，在小程序组件节点上触发事件后，只要找到虚拟 DOM 上对应的节点，触发对应的事件不就完成了么；另一方面，Vue.js 事件响应如果触发了数据更新，其生命周期函数更新将自动触发，在此函数上同步更新小程序数据，数据同步也就实现了。
+
+`getHandle`这个方法应该就是作者思路当中所说的：找到对应节点，然后找到handle。
+
+**[lifecycle.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/lifecycle.js)**
+
+在`initMP`方法中，自己创建小程序的App、Page。实现生命周期相关方法，使用`callHook`代理兼容小程序App、Page的生命周期。
+
+[官方文档生命周期](http://mpvue.com/mpvue/#_4)中说到了：
+
+> 同 vue，不同的是我们会在小程序 onReady 后，再去触发 vue mounted 生命周期
+
+这部分查看，`onReady`之后才会执行`next`，这个`next`回调最终是vue的`mountComponent`。可以在[index.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/index.js#L37)中看到。这部分代码也就是解决了"小程序生命周期中触发vue生命周期"。
+
+```js
+export function initMP (mpType, next) {
+  // ...
+    global.Page({
+      // 生命周期函数--监听页面初次渲染完成
+      onReady () {
+        mp.status = 'ready'
+
+        callHook(rootVueVM, 'onReady')
+        next()
+      },
+    })
+  // ...
+}
+```
+
+在小程序onShow时，使用$nextTick去第一次渲染数据，参考上面提到的render.js。
+
+```js
+export function initMP (mpType, next) {
+  // ...
+  global.Page({
+    // 生命周期函数--监听页面显示
+    onShow () {
+      mp.page = this
+      mp.status = 'show'
+      callHook(rootVueVM, 'onShow')
+
+      // 只有页面需要 setData
+      rootVueVM.$nextTick(() => {
+        rootVueVM._initDataToMP()
+      })
+    },
+  })
+  // ...
+}
+```
+
+在mpvue-loader生成template时，比如点击事件`@tap`会变成`bindtap="handleProxy"`，事件绑定全都会使用`handleProxy`这个方法。
+
+可以查看上面[mpvue-loader](#mpvue-loader)回顾一下。
+
+最终handleProxy调用的是event.js中的`handleProxyWithVue`。
+
+```js
+export function initMP (mpType, next) {
+  // ...
+    global.Page({
+      handleProxy (e) {
+        return rootVueVM.$handleProxyWithVue(e)
+      },
+    })
+  // ...
+}
+```
+
+**[index.js](https://github.com/Meituan-Dianping/mpvue/blob/master/src/platforms/mp/runtime/index.js)**
+
+最后index.js就负责各种初始化和mount。
+
 
 ## 分包加载
 
