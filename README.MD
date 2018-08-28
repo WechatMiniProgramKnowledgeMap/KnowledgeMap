@@ -942,7 +942,7 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 **后面的内容逐步解答这几个问题，也就弄明白了原理**
 
 ### mpvue-loader
-[mpvue-loader](https://github.com/mpvue/mpvue-loader) 是 [vue-loader](https://github.com/vuejs/vue-loader) 的一个扩展延伸版，类似于超集的关系，除了 vue-loader](https://github.com/vuejs/vue-loader) 本身所具备的能力之外，它还会利用[mpvue-template-compiler](https://github.com/Meituan-Dianping/mpvue/tree/master/packages/mpvue-template-compiler)生成`render function`。
+[mpvue-loader](https://github.com/mpvue/mpvue-loader) 是 [vue-loader](https://github.com/vuejs/vue-loader) 的一个扩展延伸版，类似于超集的关系，除了[vue-loader](https://github.com/vuejs/vue-loader) 本身所具备的能力之外，它还会利用[mpvue-template-compiler](https://github.com/Meituan-Dianping/mpvue/tree/master/packages/mpvue-template-compiler)生成`render function`。
 
 * entry
 
