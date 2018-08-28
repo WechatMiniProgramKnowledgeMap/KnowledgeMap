@@ -1361,7 +1361,7 @@ Vue.prototype._v = createTextVNode
 compileToWxml.call(this, compiled, html)
 ```
 
-
+**以上解答了问题1、2**
 
 ### runtime
 [目录结构]((https://github.com/Meituan-Dianping/mpvue/tree/master/src/platforms/mp/runtime))
