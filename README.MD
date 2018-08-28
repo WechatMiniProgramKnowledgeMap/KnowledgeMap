@@ -995,7 +995,7 @@ wepy和mpvue我都开发过完整小程序的体验下，我觉得wepy的坑更�
 * wxml
 每一个 ```.vue``` 的组件都会被生成为一个 wxml 规范的 template，然后通过 wxml 规范的 import 语法来达到一个复用，同时组件如果涉及到 props 的 data 数据，我们也会做相应的处理，举个实际的例子：
 
-```js
+```html
 <template>
     <div class="my-component" @click="test">
         <h1>{{msg}}</h1>
@@ -1019,7 +1019,7 @@ export default {
 
 这样一个 vue 的组件的模版部分会生成相应的 wxml
 
-```js
+```html
 <import src="components/other-component$hash.wxml" />
 <template name="component$hash">
     <view class="my-component" bindtap="handleProxy">
@@ -1093,7 +1093,7 @@ style scoped
 
 在微信小程序中目前是不支持 attr 选择器的，所以我们做了一点改动，把 attr 上的 [module-id] 直接写到了 class 里，如下：
 
-``` js
+``` html
 <!-- .vue -->
 <template>
     <div class="container">
@@ -1503,13 +1503,15 @@ export function initMP (mpType, next) {
 
 解决方案： 在自定义组件上绑定class或style到一个props属性上。
 
-```js
+```html
  // 组件ComponentA.vue
  <template>
   <div class="container" :class="pClass">
     ...
   </div>
 </template>
+```
+```js
 <script>
     export default {
     props: {
@@ -1522,11 +1524,13 @@ export function initMP (mpType, next) {
 </script>
 ```
  
-```js
- // PageB.vue
+```html
+<!--PageB.vue-->
 <template>
     <component-a :pClass="cusComponentAClass"  />
 </template>
+```
+```js
 <script>
 data () {
     return {
@@ -1534,7 +1538,8 @@ data () {
     }
   }
 </script>
-
+```
+```css
 <style lang="stylus" scoped>
   .a-class
     border red solid 2rpx
@@ -1544,7 +1549,7 @@ data () {
 ```
  但是这样会有问题就是style加上scoped之后，编译模板生成的代码是下面这样的：
  
-```js
+```css
  .a-class.data-v-8f1d914e {
    border: #f00 solid 2rpx;
  }
@@ -1554,7 +1559,7 @@ data () {
 ```
  所以想要这些组件的class生效就不能使用scoped的style，改成下面这样，最好自己给a-class和b-class加前缀以防其他的文件引用这些样式：
  
-```js
+```css
  <style lang="stylus">
   .a-class
     border red solid 2rpx
@@ -1571,15 +1576,17 @@ data () {
 ```
 - 在定义组件上绑定style属性到一个props属性上：
  
-```js
- // 组件ComponentA.vue
+```html
+ <!--P组件ComponentA.vue-->
  <template>
   <div class="container" :style="pStyle">
     ...
   </div>
 </template>
+```
+```js
 <script>
-    export default {
+  export default {
     props: {
       pStyle: {
         type: String,
@@ -1590,11 +1597,13 @@ data () {
 </script>
 ```
  
-```js
- // PageB.vue
+```html
+<!--PageB.vue-->
 <template>
     <component-a :pStyle="cusComponentAStyle"  />
 </template>
+```
+```js
 <script>
 const cusComponentAStyle = 'border:red solid 2rpx; margin-right:20rpx;'
 data () {
@@ -1603,7 +1612,9 @@ data () {
     }
   }
 </script>
+```
 
+```css
 <style lang="stylus" scoped>
   ...
 </style>
@@ -1626,13 +1637,15 @@ const cusComponentAStyle = arr.join('; ')
  
 - 当然自定义组件确定只会改变某个css样式，通过pros传入但单个样式的值，然后通过:style绑定肯定没问题：
 
-```js
-// 组件ComponentA.vue
+```html
+<!--组件ComponentA.vue-->
  <template>
   <div class="container" :style="{'background-color': backgroundColor}">
     ...
   </div>
 </template>
+```
+```js
 <script>
     export default {
     props: {
@@ -1645,12 +1658,11 @@ const cusComponentAStyle = arr.join('; ')
 </script>
 ```
 
-```js
- // PageB.vue
+```html
+<!-- PageB.vue -->
 <template>
     <component-a backgroundColor="red"  />
 </template>
-
 ```
 
 ## 分包加载
