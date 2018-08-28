@@ -1386,9 +1386,9 @@ compileToWxml.call(this, compiled, html)
 
 `initDataToMP`收集vm上的data，然后调用小程序Page示例的`setData`渲染。
 
-`updateDataToMP`在每次patch，也就是依赖收集发现数据改变时更新(参考patch.js代码)，这部分一样会使用`nextTick`和队列。最终使用了节流阀`throttleSetData`，50毫秒用以控制频率以解决频繁修改Data会大量传输Data数据导致的性能问题。
+`updateDataToMP`在每次patch，也就是依赖收集发现数据改变时更新(参考patch.js代码)，这部分一样会使用`nextTick`和队列。最终使用了节流阀`throttleSetData`。50毫秒用来控制频率以解决频繁修改Data，会造成大量传输Data数据而导致的性能问题。
 
-其中`collectVmData`最终也是用到了`formatVmData`。尤其要注意的事一句注释：
+其中`collectVmData`最终也是用到了`formatVmData`。尤其要注意的是一句注释：
 
 > getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
 
@@ -1476,7 +1476,7 @@ export function initMP (mpType, next) {
 }
 ```
 
-在mpvue-loader生成template时，比如点击事件`@tap`会变成`bindtap="handleProxy"`，事件绑定全都会使用`handleProxy`这个方法。
+在mpvue-loader生成template时，比如点击事件`@click`会变成`bindtap="handleProxy"`，事件绑定全都会使用`handleProxy`这个方法。
 
 可以查看上面[mpvue-loader](#mpvue-loader)回顾一下。
 
@@ -1635,7 +1635,7 @@ for (let [key, value] of Object.entries(bstyle)) {
 const cusComponentAStyle = arr.join('; ')
 ```
  
-- 当然自定义组件确定只会改变某个css样式，通过pros传入但单个样式的值，然后通过:style绑定肯定没问题：
+- 当然自定义组件确定只会改变某个css样式，通过pros传入单个样式的值，然后通过:style绑定肯定没问题：
 
 ```html
 <!--组件ComponentA.vue-->
