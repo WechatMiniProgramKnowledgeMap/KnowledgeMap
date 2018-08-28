@@ -1386,7 +1386,7 @@ compileToWxml.call(this, compiled, html)
 
 `initDataToMP`收集vm上的data，然后调用小程序Page示例的`setData`渲染。
 
-`updateDataToMP`在每次patch，也就是依赖收集发现数据改变时更新(参考patch.js代码)，这部分一样会使用`nextTick`和队列。最终使用了节流阀`throttleSetData`，50秒毫秒用以控制频率以解决频繁修改Data会大量传输Data数据导致的性能问题。
+`updateDataToMP`在每次patch，也就是依赖收集发现数据改变时更新(参考patch.js代码)，这部分一样会使用`nextTick`和队列。最终使用了节流阀`throttleSetData`，50毫秒用以控制频率以解决频繁修改Data会大量传输Data数据导致的性能问题。
 
 其中`collectVmData`最终也是用到了`formatVmData`。尤其要注意的事一句注释：
 
