@@ -1183,39 +1183,100 @@ mpvue自己实现了`export { compile, compileToFunctions, compileToWxml }`([链
 // mpvue-loader/lib/loader.js
 var parts = parse(content, fileName, this.sourceMap)
 ```
-得到的结果大致如下：
+
+假如vue文件源码如下:
+
+```js
+<template>
+  <view class="container-bg">
+    <view class="home-container">
+      <home-quotation-view v-for="(item, index) in lists" :key="index" :reason="item.reason" :stockList="item.list" @itemViewClicked="itemViewClicked" />
+    </view>
+  </view>
+</template>
+
+<script lang="js">
+import homeQuotationView from '@/components/homeQuotationView'
+import topListApi from '@/api/topListApi'
+
+export default {
+  data () {
+    return {
+      lists: []
+    }
+  },
+  components: {
+    homeQuotationView
+  },
+  methods: {
+    async loadRankList () {
+      let {data} = await topListApi.rankList()
+      if (data) {
+        this.dateTime = data.dt
+        this.lists = data.rankList.filter((item) => {
+          return !!item
+        })
+      }
+    },
+    itemViewClicked (quotationItem) {
+      wx.navigateTo({
+        url: `/pages/topListDetail/main?item=${JSON.stringify(quotationItem)}`
+      })
+    }
+  },
+  onShow () {
+    this.loadRankList()
+  }
+}
+</script>
+
+<style lang="stylus" scoped>
+  .container-bg
+    width 100%
+    height 100%
+    background-color #F2F4FA
+
+  .home-container
+    width 100%
+    height 100%
+    overflow-x hidden
+
+</style>
+```
+
+调用`parse(content, fileName, this.sourceMap)` 函数得到的结果大致如下：
 
 ```js
 {
-	"template": {
-		"type": "template",
-		"content": "\n<view class=\"container-view\">\n  <home-quotation-item v-for=\"(stock, index) in stockList\" :key=\"index\" :quotationItem=\"stock\" @itemClicked=\"itemClicked\"></home-quotation-item>\n</view>\n",
-		"start": 10,
-		"attrs": {},
-		"end": 391
-	},
-	"script": {
-		"type": "script",
-		"content": "//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\nimport homeQuotationItem from '@/components/homeQuotationItem'\n\nexport default {\n  data () {\n    return {\n    }\n  },\n  props: {\n    reason: String,\n    stockList: Array\n  },\n  components: {\n    homeQuotationItem\n  },\n  methods: {\n    itemClicked (quotationItem) {\n      this.$emit('itemViewClicked', quotationItem)\n    }\n  }\n}\n",
-		"start": 412,
-		"attrs": {},
-		"end": 740,
-		...
-	},
-	"styles": [{
-		"type": "style",
-		"content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n.container-view\n  width :100%\n  background :white\n  margin-bottom :18rpx\n\n.section-headView\n  width :100%\n  height :100%\n  display :flex\n  align-items :center\n  margin-left :24rpx\n  padding :18rpx 0\n",
-		"start": 779,
-		"attrs": {
-			"lang": "stylus",
-			"scoped": true
-		},
-		"lang": "stylus",
-		"scoped": true,
-		"end": 1193,
-		...
-	}],
-	"customBlocks": []
+  template: {
+    type: 'template',
+    content: '\n<view class="container-bg">\n  <view class="home-container">\n    <home-quotation-view v-for="(item, index) in lists" :key="index" :reason="item.reason" :stockList="item.list" @itemViewClicked="itemViewClicked" />\n  </view>\n</view>\n',
+    start: 10,
+    attrs: {},
+    end: 251
+  },
+  script: {
+    type: 'script',
+    content: '\n\n\n\n\n\n\n\n\nimport homeQuotationView from \'@/components/homeQuotationView\'\nimport topListApi from \'@/api/topListApi\'\n\nexport default {\n  data () {\n    return {\n      lists: []\n    }\n  },\n  components: {\n    homeQuotationView\n  },\n  methods: {\n    async loadRankList () {\n      let {data} = await topListApi.rankList()\n      if (data) {\n        this.dateTime = data.dt\n        this.lists = data.rankList.filter((item) => {\n          return !!item\n        })\n      }\n    },\n    itemViewClicked (quotationItem) {\n      wx.navigateTo({\n        url: `/pages/topListDetail/main?item=${JSON.stringify(quotationItem)}`\n      })\n    }\n  },\n  onShow () {\n    this.loadRankList()\n  }\n}\n',
+    start: 282,
+    attrs: {
+      lang: 'js'
+    },
+    lang: 'js',
+    end: 946,
+    ...
+  },
+  styles: [{
+    type: 'style',
+    content: '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n.container-bg\n  width 100%\n  height 100%\n  background-color #F2F4FA\n\n.home-container\n  width 100%\n  height 100%\n  overflow-x hidden\n\n',
+    start: 985,
+    attrs: [Object],
+    lang: 'stylus',
+    scoped: true,
+    end: 1135,
+    ...
+  }],
+  customBlocks: []
 }
 ```
 
@@ -1257,49 +1318,94 @@ compile方法生产下面的ast(Abstract Syntax Tree)模板，render函数和sta
     },
     parent: undefined,
     children: [{
+      type: 1,
+      tag: 'view',
+      attrsList: [],
+      attrsMap: {
+        class: 'home-container'
+      },
+      parent: {
         type: 1,
         tag: 'view',
         attrsList: [],
         attrsMap: {
-          class: 'mask-view',
-          'v-if': 'isShow'
+          class: 'container-bg'
         },
-        parent: {
-          type: 1,
-          tag: 'view',
-          attrsList: [],
-          attrsMap: {
-            class: 'container-bg'
-          },
-          parent: undefined,
-          children: [
-            ...
-          ],
-          plain: false,
-          staticClass: '"container-bg"',
-          static: false,
-          staticRoot: false
-        },
-        children: [],
-        if: 'isShow',
-        ifConditions: [{
-          exp: 'isShow',
-          block: [Circular]
-        }],
+        parent: undefined,
+        children: [
+          [Circular]
+        ],
         plain: false,
-        staticClass: '"mask-view"',
+        staticClass: '"container-bg"',
+        static: false,
+        staticRoot: false
+      },
+      children: [{
+        type: 1,
+        tag: 'home-quotation-view',
+        attrsList: [{
+          name: ':reason',
+          value: 'item.reason'
+        }, {
+          name: ':stockList',
+          value: 'item.list'
+        }, {
+          name: '@itemViewClicked',
+          value: 'itemViewClicked'
+        }],
+        attrsMap: {
+          'v-for': '(item, index) in lists',
+          ':key': 'index',
+          ':reason': 'item.reason',
+          ':stockList': 'item.list',
+          '@itemViewClicked': 'itemViewClicked',
+          'data-eventid': '{{\'0-\'+index}}',
+          'data-comkey': '{{$k}}'
+        },
+        parent: [Circular],
+        children: [],
+        for: 'lists',
+        alias: 'item',
+        iterator1: 'index',
+        key: 'index',
+        plain: false,
+        hasBindings: true,
+        attrs: [{
+          name: 'reason',
+          value: 'item.reason'
+        }, {
+          name: 'stockList',
+          value: 'item.list'
+        }, {
+          name: 'eventid',
+          value: '\'0-\'+index'
+        }, {
+          name: 'mpcomid',
+          value: '\'0-\'+index'
+        }],
+        events: {
+          itemViewClicked: {
+            value: 'itemViewClicked',
+            modifiers: undefined
+          }
+        },
+        eventid: '\'0-\'+index',
+        mpcomid: '\'0-\'+index',
         static: false,
         staticRoot: false,
-        ifProcessed: true
-      },
-      ...
-    ],
+        forProcessed: true
+      }],
+      plain: false,
+      staticClass: '"home-container"',
+      static: false,
+      staticRoot: false
+    }],
     plain: false,
     staticClass: '"container-bg"',
     static: false,
     staticRoot: false
   },
-  render: 'with(this){return _c(\'view\',{staticClass:"container-bg"},[(isShow)?_c(\'view\',{staticClass:"mask-view"}):_e(),_v(" "),_c(\'view\',{staticClass:"head-view"},[_c(\'view\',{staticClass:"left-view"},[_c(\'view\',{staticClass:"line-view"}),_v(" "),_c(\'view\',{staticClass:"top-dateView"},[_v(_s(rankDate)+" "+_s(listNum)+"条数据")])]),_v(" "),_c(\'form\',{attrs:{"report-submit":"true","eventid":\'1\'},on:{"submit":onSubscribeClick}},[_c(\'button\',{staticClass:"right-view",attrs:{"form-type":"submit","open-type":"getUserInfo","eventid":\'0\'},on:{"getuserinfo":onGetUserInfo}},[_c(\'image\',{staticClass:"subscribe-icon",attrs:{"mode":"aspectFit","src":"/static/images/subscribe-icon.png"}}),_v(" "),_c(\'view\',{staticClass:"subscribe-title"},[_v("订阅")])])],1)],1),_v(" "),_c(\'view\',{staticClass:"home-container"},_l((lists),function(item,index){return _c(\'home-quotation-view\',{key:index,attrs:{"reason":item.reason,"stockList":item.list,"eventid":\'2-\'+index,"mpcomid":\'0-\'+index},on:{"itemViewClicked":itemViewClicked}})})),_v(" "),_c(\'view\',{staticClass:"footer-view"},[_v("没有更多")])])}',
+  render: 'with(this){return _c(\'view\',{staticClass:"container-bg"},[_c(\'view\',{staticClass:"home-container"},_l((lists),function(item,index){return _c(\'home-quotation-view\',{key:index,attrs:{"reason":item.reason,"stockList":item.list,"eventid":\'0-\'+index,"mpcomid":\'0-\'+index},on:{"itemViewClicked":itemViewClicked}})}))])}',
   staticRenderFns: [],
   errors: [],
   tips: []
