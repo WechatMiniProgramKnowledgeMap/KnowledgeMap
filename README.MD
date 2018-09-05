@@ -1,3 +1,5 @@
+后续维护迁移至[CS-Interview-Knowledge-Map](https://github.com/WechatMiniProgramKnowledgeMap/CS-Interview-Knowledge-Map)
+
 - [开言](#开言)
 - [小程序架构](#小程序架构)
   - [下载小程序完整包](#下载小程序完整包)
